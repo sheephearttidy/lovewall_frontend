@@ -26,7 +26,7 @@
 
       <div class="extra">
         <span>还没有账号？<router-link to="/register">立即注册</router-link></span>
-        <router-link to="/">返回表白墙</router-link>
+        <span><router-link to="/forgot-password">忘记密码？</router-link> · <router-link to="/">返回表白墙</router-link></span>
       </div>
 
       <el-divider>

@@ -86,10 +86,6 @@ const auth = useAuthStore()
 wall.init()
 auth.init()
 
-const dayAgoCount = computed(
-  () => wall.confessions.filter((c) => Date.now() - c.createdAt < 24 * 3600 * 1000).length
-)
-
 const statCards = computed(() => [
   { label: '表白总数', value: wall.totalConfessions, icon: 'ChatDotRound', color: '#f56c6c', bg: '#fef0f0' },
   { label: '累计点赞', value: wall.totalLikes, icon: 'Star', color: '#e6a23c', bg: '#fdf6ec' },

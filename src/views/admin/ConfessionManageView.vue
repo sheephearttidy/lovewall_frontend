@@ -112,7 +112,8 @@
         </div>
         <el-divider content-position="left">评论（{{ detail.comments.length }}）</el-divider>
         <div v-for="cm in detail.comments" :key="cm.id" class="detail-comment">
-          <b>{{ cm.nickname }}</b>：{{ cm.content }}
+          <b>{{ cm.nickname }}</b>
+          <span v-if="cm.replyToNickname" class="reply-inline"> 回复 @{{ cm.replyToNickname }}</span>：{{ cm.content }}
           <span class="muted">（{{ timeAgo(cm.createdAt) }}）</span>
         </div>
         <div v-if="!detail.comments.length" class="muted">暂无评论</div>
@@ -254,5 +255,8 @@ async function batchDelete() {
   font-size: 13px;
   color: #606266;
   line-height: 1.8;
+}
+.reply-inline {
+  color: #c94f6d;
 }
 </style>

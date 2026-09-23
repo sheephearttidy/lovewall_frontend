@@ -3,8 +3,16 @@ import { getItem, setItem } from '@/utils/storage'
 import { genId } from '@/utils/format'
 import { seedConfessions } from '@/api/seed'
 import { useAuthStore } from './auth'
+import { useSettingsStore } from './settings'
+import { filterSensitiveText } from '@/utils/sensitive'
+import { checkThrottle, markThrottle } from '@/utils/throttle'
 
 const KEY = 'confessions'
+
+/** 发布表白冷却：60 秒 / 条 */
+const POST_COOLDOWN = 60 * 1000
+/** 发表评论冷却：30 秒 / 条 */
+const COMMENT_COOLDOWN = 30 * 1000
 
 export const useWallStore = defineStore('wall', {
   state: () => ({
@@ -65,15 +73,34 @@ export const useWallStore = defineStore('wall', {
     },
 
     /**
-     * 发布表白
+     * 发布表白（含敏感词过滤与频率限制）
+     * @returns {{ confession: object, filtered: number }}
      */
     addConfession({ to, content, from, color, images = [] }) {
       const auth = useAuthStore()
       if (!auth.isLoggedIn) throw new Error('请先登录后再发布表白')
+
+      const throttle = checkThrottle(`post:${auth.currentUser.id}`, POST_COOLDOWN)
+      if (!throttle.ok) {
+        throw new Error(`发布太频繁啦，请 ${throttle.remainSec} 秒后再试`)
+      }
+
+      const settings = useSettingsStore()
+      settings.init()
+
+      let finalContent = (content || '').trim()
+      let filtered = 0
+      if (settings.sensitiveFilterEnabled) {
+        const r = filterSensitiveText(finalContent)
+        finalContent = r.clean
+        filtered = r.hitCount
+      }
+      if (!finalContent) throw new Error('表白内容不能为空')
+
       const item = {
         id: genId('c-'),
         to: (to || '').trim() || '所有人',
-        content: (content || '').trim(),
+        content: finalContent,
         from: from || '匿名',
         authorId: auth.currentUser?.id || null,
         color,
@@ -84,8 +111,9 @@ export const useWallStore = defineStore('wall', {
         status: 'normal'
       }
       this.confessions.unshift(item)
+      markThrottle(`post:${auth.currentUser.id}`)
       this._persist()
-      return item
+      return { confession: item, filtered }
     },
 
     /**
@@ -109,25 +137,51 @@ export const useWallStore = defineStore('wall', {
     },
 
     /**
-     * 发表评论
+     * 发表评论（支持楼中楼回复，含敏感词过滤与频率限制）
+     * @param {string} confessionId 表白 ID
+     * @param {string} content 评论内容
+     * @param {{ id: string, nickname: string } | null} replyTo 被回复的评论
+     * @returns {{ comment: object, filtered: number }}
      */
-    addComment(confessionId, content) {
+    addComment(confessionId, content, replyTo = null) {
       const auth = useAuthStore()
       if (!auth.isLoggedIn) throw new Error('请先登录后再评论')
+
+      const throttle = checkThrottle(`comment:${auth.currentUser.id}`, COMMENT_COOLDOWN)
+      if (!throttle.ok) {
+        throw new Error(`评论太频繁，请 ${throttle.remainSec} 秒后再试`)
+      }
+
       const c = this.confessions.find((x) => x.id === confessionId)
       if (!c) throw new Error('表白不存在')
+
+      const settings = useSettingsStore()
+      settings.init()
+
+      let finalContent = (content || '').trim()
+      let filtered = 0
+      if (settings.sensitiveFilterEnabled) {
+        const r = filterSensitiveText(finalContent)
+        finalContent = r.clean
+        filtered = r.hitCount
+      }
+      if (!finalContent) throw new Error('评论内容不能为空')
+
       const cm = {
         id: genId('cm-'),
         confessionId,
         authorId: auth.currentUser.id,
         nickname: auth.currentUser.nickname,
-        content: (content || '').trim(),
+        content: finalContent,
+        replyTo: replyTo?.id || null,
+        replyToNickname: replyTo?.nickname || '',
         createdAt: Date.now(),
         status: 'normal'
       }
       c.comments.push(cm)
+      markThrottle(`comment:${auth.currentUser.id}`)
       this._persist()
-      return cm
+      return { comment: cm, filtered }
     },
 
     removeComment(commentId) {

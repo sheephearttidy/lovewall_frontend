@@ -156,14 +156,18 @@ async function submit() {
   }
   submitting.value = true
   try {
-    wall.addConfession({
+    const { filtered } = wall.addConfession({
       to: form.to,
       content: form.content,
       from: signature.value,
       color: form.color,
       images: [...images.value]
     })
-    ElMessage.success('表白发布成功，祝你心想事成 💗')
+    ElMessage.success(
+      filtered > 0
+        ? `表白发布成功（已过滤 ${filtered} 处敏感词），祝你心想事成 💗`
+        : '表白发布成功，祝你心想事成 💗'
+    )
     visible.value = false
     emit('posted')
   } catch (e) {

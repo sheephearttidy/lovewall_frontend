@@ -89,7 +89,9 @@
           :key="c.id"
           :confession="c"
           :index="i"
+          :highlighted="highlightId === c.id"
           @open-login="goLogin"
+          @share="openShare"
         />
       </div>
       <el-empty v-else description="暂无符合条件的表白，快来写下第一条吧～" />
@@ -100,12 +102,13 @@
     <footer class="footer">Lovewall · 用爱发电 · Made with 💗</footer>
 
     <PostDialog v-model="postVisible" />
+    <ShareDialog v-model="shareVisible" :confession="shareTarget" />
   </div>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
@@ -114,7 +117,9 @@ import { WALL_COLORS } from '@/constants/colors'
 import FloatingHearts from '@/components/FloatingHearts.vue'
 import ConfessionCard from '@/components/ConfessionCard.vue'
 import PostDialog from '@/components/PostDialog.vue'
+import ShareDialog from '@/components/ShareDialog.vue'
 
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const wall = useWallStore()
@@ -125,6 +130,13 @@ const sortBy = ref('latest')
 const activeColor = ref('')
 const postVisible = ref(false)
 const wallRef = ref()
+
+// 分享相关
+const shareVisible = ref(false)
+const shareTarget = ref(null)
+
+// 链接定位高亮（分享链接 ?post=xxx）
+const highlightId = ref('')
 
 const filtered = computed(() => {
   let list = wall.visible
@@ -168,6 +180,26 @@ function logout() {
 function scrollToWall() {
   wallRef.value?.scrollIntoView({ behavior: 'smooth' })
 }
+
+function openShare(confession) {
+  shareTarget.value = confession
+  shareVisible.value = true
+}
+
+onMounted(() => {
+  // 处理分享链接：?post=xxx 自动定位并高亮
+  const postId = route.query.post
+  if (typeof postId === 'string' && postId) {
+    setTimeout(() => {
+      const el = document.getElementById('card-' + postId)
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        highlightId.value = postId
+        setTimeout(() => (highlightId.value = ''), 3600)
+      }
+    }, 300)
+  }
+})
 </script>
 
 <style scoped>

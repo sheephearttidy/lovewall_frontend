@@ -1,5 +1,10 @@
 <template>
-  <div class="confession-card" :class="{ liked }" :style="cardStyle">
+  <div
+    :id="'card-' + confession.id"
+    class="confession-card"
+    :class="{ liked, highlight: highlighted }"
+    :style="cardStyle"
+  >
     <span class="pin" :style="{ background: color.header }"></span>
 
     <div class="card-to" :style="{ color: color.header }">To：{{ confession.to }}</div>
@@ -39,6 +44,9 @@
         <span>💬</span>
         <span>{{ confession.comments.length }}</span>
       </div>
+      <div class="action" title="分享" @click="$emit('share', confession)">
+        <span>🔗</span>
+      </div>
     </div>
 
     <CommentPanel v-if="showComments" :confession="confession" @need-login="$emit('open-login')" />
@@ -48,7 +56,6 @@
 <script setup>
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
 import { useWallStore } from '@/stores/wall'
 import { timeAgo } from '@/utils/format'
 import { colorOf } from '@/constants/colors'
@@ -56,11 +63,11 @@ import CommentPanel from './CommentPanel.vue'
 
 const props = defineProps({
   confession: { type: Object, required: true },
-  index: { type: Number, default: 0 }
+  index: { type: Number, default: 0 },
+  highlighted: { type: Boolean, default: false }
 })
-defineEmits(['open-login'])
+defineEmits(['open-login', 'share'])
 
-const auth = useAuthStore()
 const wall = useWallStore()
 
 const color = computed(() => colorOf(props.confession.color))
@@ -130,6 +137,21 @@ function spawnParticles() {
   transform: rotate(0deg) translateY(-4px);
   box-shadow: 0 10px 24px rgba(245, 108, 108, 0.16);
   z-index: 2;
+}
+.confession-card.highlight {
+  animation: highlight-pulse 1.1s ease-in-out 3;
+  border-color: #c94f6d;
+  z-index: 3;
+}
+@keyframes highlight-pulse {
+  0%,
+  100% {
+    box-shadow: 0 4px 14px rgba(245, 108, 108, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(201, 79, 109, 0.35);
+    transform: rotate(0deg) scale(1.02);
+  }
 }
 .pin {
   position: absolute;

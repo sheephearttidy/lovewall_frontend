@@ -42,13 +42,15 @@ export function seedUsers() {
 }
 
 let cid = 0
-function comment(id, authorId, nickname, content, hours) {
+function comment(id, authorId, nickname, content, hours, replyTo = null, replyToNickname = '') {
   return {
     id,
     confessionId: null,
     authorId,
     nickname,
     content,
+    replyTo,
+    replyToNickname,
     createdAt: hoursAgo(hours),
     status: 'normal'
   }
@@ -221,7 +223,7 @@ export function seedConfessions() {
       status: 'normal'
     }
   ]
-  list.forEach((c, i) => {
+  list.forEach((c) => {
     c.id = 'c-seed-' + ++cid
     c.comments.forEach((cm) => (cm.confessionId = c.id))
   })

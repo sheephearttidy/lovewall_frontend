@@ -143,6 +143,32 @@ export const useAuthStore = defineStore('auth', {
       this._persistUsers()
     },
 
+    /**
+     * 忘记密码 - 校验用户名与邮箱是否匹配（返回脱敏用户信息）
+     */
+    findUserForReset(username, email) {
+      this.init()
+      const uname = (username || '').trim()
+      const mail = (email || '').trim()
+      if (!uname || !mail) throw new Error('请填写用户名和邮箱')
+      const user = this.users.find((u) => u.username === uname && u.email === mail)
+      if (!user) throw new Error('用户名与邮箱不匹配')
+      if (user.status === 'banned') throw new Error('该账号已被封禁，无法重置密码')
+      return { id: user.id, username: user.username, nickname: user.nickname, email: user.email }
+    },
+
+    /**
+     * 忘记密码 - 设置新密码
+     */
+    setPasswordByReset(userId, newPassword) {
+      this.init()
+      const user = this.users.find((u) => u.id === userId)
+      if (!user) throw new Error('用户不存在')
+      if ((newPassword || '').length < 6) throw new Error('密码长度不能少于 6 位')
+      user.password = hashPassword(newPassword)
+      this._persistUsers()
+    },
+
     /* ================= 管理员操作 ================= */
 
     createUser({ username, password, nickname, role = 'user', email = '' }) {

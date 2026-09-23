@@ -33,6 +33,31 @@
         />
       </div>
 
+      <el-divider />
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">敏感词过滤</div>
+          <div class="setting-desc">开启后，表白与评论中的敏感词将自动替换为 *（内置演示词库，生产环境建议替换为服务端词库或第三方审核 API）</div>
+        </div>
+        <el-switch
+          v-model="sensitiveEnabled"
+          size="large"
+          :loading="switching"
+          @change="(val) => onSwitch('sensitive', val)"
+        />
+      </div>
+
+      <el-divider />
+
+      <div class="setting-row">
+        <div class="setting-info">
+          <div class="setting-name">发布频率限制</div>
+          <div class="setting-desc">为保障内容质量，已内置频率限制：每用户发布表白间隔 60 秒、发表评论间隔 30 秒（始终生效，无需开关）</div>
+        </div>
+        <el-tag effect="plain" round>内置</el-tag>
+      </div>
+
       <el-alert
         class="mt"
         type="info"
@@ -73,6 +98,7 @@ settings.init()
 
 const emailEnabled = ref(settings.emailVerificationEnabled)
 const captchaEnabled = ref(settings.captchaEnabled)
+const sensitiveEnabled = ref(settings.sensitiveFilterEnabled)
 const switching = ref(false)
 
 function onSwitch(type, val) {
@@ -81,9 +107,12 @@ function onSwitch(type, val) {
     if (type === 'email') {
       settings.setEmailVerification(val)
       ElMessage.success(val ? '已开启注册邮箱验证' : '已关闭注册邮箱验证')
-    } else {
+    } else if (type === 'captcha') {
       settings.setCaptcha(val)
       ElMessage.success(val ? '已开启注册图形验证码' : '已关闭注册图形验证码')
+    } else {
+      settings.setSensitiveFilter(val)
+      ElMessage.success(val ? '已开启敏感词过滤' : '已关闭敏感词过滤')
     }
   } finally {
     switching.value = false

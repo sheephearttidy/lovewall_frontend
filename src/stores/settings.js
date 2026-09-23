@@ -10,6 +10,7 @@ export const useSettingsStore = defineStore('settings', {
   state: () => ({
     emailVerificationEnabled: false,
     captchaEnabled: false,
+    sensitiveFilterEnabled: false,
     initialized: false
   }),
 
@@ -20,6 +21,7 @@ export const useSettingsStore = defineStore('settings', {
       if (data) {
         this.emailVerificationEnabled = !!data.emailVerificationEnabled
         this.captchaEnabled = !!data.captchaEnabled
+        this.sensitiveFilterEnabled = !!data.sensitiveFilterEnabled
       }
       this.initialized = true
     },
@@ -27,7 +29,8 @@ export const useSettingsStore = defineStore('settings', {
     _persist() {
       setItem(KEY, {
         emailVerificationEnabled: this.emailVerificationEnabled,
-        captchaEnabled: this.captchaEnabled
+        captchaEnabled: this.captchaEnabled,
+        sensitiveFilterEnabled: this.sensitiveFilterEnabled
       })
     },
 
@@ -38,6 +41,11 @@ export const useSettingsStore = defineStore('settings', {
 
     setCaptcha(enabled) {
       this.captchaEnabled = !!enabled
+      this._persist()
+    },
+
+    setSensitiveFilter(enabled) {
+      this.sensitiveFilterEnabled = !!enabled
       this._persist()
     }
   }
