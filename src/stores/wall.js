@@ -165,6 +165,26 @@ export const useWallStore = defineStore('wall', {
       const set = new Set(ids)
       this.confessions = this.confessions.filter((c) => !set.has(c.id))
       this._persist()
+    },
+
+    /**
+     * 用户修改昵称后，同步其历史表白署名与评论昵称
+     */
+    syncAuthorNickname(userId, oldNickname, newNickname) {
+      let changed = false
+      this.confessions.forEach((c) => {
+        if (c.authorId === userId && c.from === oldNickname) {
+          c.from = newNickname
+          changed = true
+        }
+        c.comments.forEach((cm) => {
+          if (cm.authorId === userId && cm.nickname !== newNickname) {
+            cm.nickname = newNickname
+            changed = true
+          }
+        })
+      })
+      if (changed) this._persist()
     }
   }
 })

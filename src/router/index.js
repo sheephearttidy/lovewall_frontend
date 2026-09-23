@@ -22,6 +22,12 @@ const routes = [
     meta: { title: '注册' }
   },
   {
+    path: '/profile',
+    name: 'profile',
+    component: () => import('@/views/ProfileView.vue'),
+    meta: { title: '个人中心', requiresAuth: true }
+  },
+  {
     path: '/admin',
     component: () => import('@/views/admin/AdminLayout.vue'),
     redirect: '/admin/dashboard',
@@ -49,6 +55,12 @@ const routes = [
         name: 'admin-users',
         component: () => import('@/views/admin/UserManageView.vue'),
         meta: { title: '用户管理', requiresAdmin: true }
+      },
+      {
+        path: 'settings',
+        name: 'admin-settings',
+        component: () => import('@/views/admin/SettingsView.vue'),
+        meta: { title: '系统设置', requiresAdmin: true }
       }
     ]
   },
@@ -70,6 +82,11 @@ router.beforeEach((to) => {
   // 已登录用户访问登录/注册页 → 回首页
   if ((to.name === 'login' || to.name === 'register') && auth.isLoggedIn) {
     return { name: 'home' }
+  }
+
+  // 需要登录的页面
+  if (to.meta.requiresAuth && !auth.isLoggedIn) {
+    return { name: 'login', query: { redirect: to.fullPath } }
   }
 
   // 管理后台权限守卫

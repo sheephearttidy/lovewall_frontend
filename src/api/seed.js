@@ -13,7 +13,7 @@ function hoursAgo(n) {
   return Date.now() - n * 3600 * 1000
 }
 
-function user(id, username, nickname, password, role, createdAt) {
+function user(id, username, nickname, password, role, createdAt, email = '') {
   return {
     id,
     username,
@@ -21,6 +21,7 @@ function user(id, username, nickname, password, role, createdAt) {
     password: hashPassword(password),
     role,
     avatarColor: avatarColorOf(nickname),
+    email,
     createdAt,
     status: 'active'
   }
@@ -31,12 +32,12 @@ function user(id, username, nickname, password, role, createdAt) {
  */
 export function seedUsers() {
   return [
-    user('u-admin', 'admin', '管理员', 'admin123', 'admin', hoursAgo(24 * 60)),
-    user('u-1001', 'xiaomei', '小美', '123456', 'user', hoursAgo(24 * 50)),
-    user('u-1002', 'chenhao', '辰昊', '123456', 'user', hoursAgo(24 * 40)),
-    user('u-1003', 'yaya', '丫丫', '123456', 'user', hoursAgo(24 * 30)),
-    user('u-1004', 'luming', '陆鸣', '123456', 'user', hoursAgo(24 * 20)),
-    user('u-1005', 'tangtang', '糖糖', '123456', 'user', hoursAgo(24 * 10))
+    user('u-admin', 'admin', '管理员', 'admin123', 'admin', hoursAgo(24 * 60), 'admin@lovewall.demo'),
+    user('u-1001', 'xiaomei', '小美', '123456', 'user', hoursAgo(24 * 50), 'xiaomei@lovewall.demo'),
+    user('u-1002', 'chenhao', '辰昊', '123456', 'user', hoursAgo(24 * 40), 'chenhao@lovewall.demo'),
+    user('u-1003', 'yaya', '丫丫', '123456', 'user', hoursAgo(24 * 30), 'yaya@lovewall.demo'),
+    user('u-1004', 'luming', '陆鸣', '123456', 'user', hoursAgo(24 * 20), 'luming@lovewall.demo'),
+    user('u-1005', 'tangtang', '糖糖', '123456', 'user', hoursAgo(24 * 10), 'tangtang@lovewall.demo')
   ]
 }
 

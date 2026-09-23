@@ -20,6 +20,9 @@
             </span>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item @click="router.push('/profile')">
+                  <el-icon><UserFilled /></el-icon>个人中心
+                </el-dropdown-item>
                 <el-dropdown-item @click="openPost">发布表白</el-dropdown-item>
                 <el-dropdown-item divided @click="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>

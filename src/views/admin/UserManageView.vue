@@ -28,6 +28,12 @@
           </div>
         </template>
       </el-table-column>
+      <el-table-column label="邮箱" width="190" show-overflow-tooltip>
+        <template #default="{ row }">
+          <span v-if="row.email">{{ row.email }}</span>
+          <span v-else class="muted">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="角色" width="100" align="center">
         <template #default="{ row }">
           <el-tag :type="row.role === 'admin' ? 'danger' : 'info'">
@@ -90,6 +96,9 @@
         <el-form-item label="昵称" prop="nickname">
           <el-input v-model="createForm.nickname" placeholder="留空则默认使用用户名" />
         </el-form-item>
+        <el-form-item label="邮箱" prop="email">
+          <el-input v-model="createForm.email" placeholder="选填" />
+        </el-form-item>
         <el-form-item label="初始密码" prop="password">
           <el-input v-model="createForm.password" type="password" placeholder="至少 6 位" show-password />
         </el-form-item>
@@ -124,7 +133,7 @@ const pageSize = ref(10)
 const createVisible = ref(false)
 const createFormRef = ref()
 
-const createForm = reactive({ username: '', nickname: '', password: '', role: 'user' })
+const createForm = reactive({ username: '', nickname: '', email: '', password: '', role: 'user' })
 const createRules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -201,7 +210,7 @@ async function createUser() {
     auth.createUser({ ...createForm })
     ElMessage.success('用户创建成功')
     createVisible.value = false
-    Object.assign(createForm, { username: '', nickname: '', password: '', role: 'user' })
+    Object.assign(createForm, { username: '', nickname: '', email: '', password: '', role: 'user' })
   } catch (e) {
     ElMessage.error(e.message)
   }
@@ -245,6 +254,9 @@ async function createUser() {
 }
 .username {
   font-size: 12px;
+  color: #c0c4cc;
+}
+.muted {
   color: #c0c4cc;
 }
 .pagination {
