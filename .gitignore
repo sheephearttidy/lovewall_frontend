@@ -15,3 +15,4 @@ yarn-error.log*
 *.sln
 *.sw?
 .trae-html-share-packages/
+.screenshots/
