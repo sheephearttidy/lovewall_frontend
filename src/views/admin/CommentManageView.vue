@@ -1,0 +1,134 @@
+<template>
+  <div class="manage-page">
+    <!-- 工具栏 -->
+    <div class="toolbar">
+      <el-input
+        v-model="keyword"
+        placeholder="搜索评论内容 / 评论人"
+        clearable
+        :prefix-icon="Search"
+        class="search-input"
+      />
+      <div class="spacer"></div>
+      <el-button type="danger" plain :disabled="!selection.length" @click="batchDelete">
+        批量删除{{ selection.length ? `（${selection.length}）` : '' }}
+      </el-button>
+    </div>
+
+    <!-- 表格 -->
+    <el-table :data="paged" @selection-change="(rows) => (selection = rows)" stripe style="width: 100%">
+      <el-table-column type="selection" width="46" />
+      <el-table-column prop="id" label="评论ID" width="120" show-overflow-tooltip />
+      <el-table-column label="评论内容" min-width="220">
+        <template #default="{ row }">
+          <div class="text-ellipsis-2 cell-content">{{ row.content }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="所属表白" min-width="180">
+        <template #default="{ row }">
+          <div class="text-ellipsis-2 cell-content muted-2">To：{{ row.confessionTo }} | {{ row.confessionContent }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="评论人" prop="nickname" width="100" />
+      <el-table-column label="时间" width="150">
+        <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
+      </el-table-column>
+      <el-table-column label="操作" width="90" fixed="right">
+        <template #default="{ row }">
+          <el-button link type="danger" @click="removeOne(row)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 分页 -->
+    <div class="pagination">
+      <el-pagination
+        v-model:current-page="page"
+        :page-size="pageSize"
+        :total="filtered.length"
+        :page-sizes="[10, 20, 50]"
+        layout="total, sizes, prev, pager, next"
+        @size-change="pageSize = $event"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { computed, ref } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { Search } from '@element-plus/icons-vue'
+import { useWallStore } from '@/stores/wall'
+import { formatDateTime } from '@/utils/format'
+
+const wall = useWallStore()
+wall.init()
+
+const keyword = ref('')
+const selection = ref([])
+const page = ref(1)
+const pageSize = ref(10)
+
+const filtered = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  if (!kw) return wall.allComments
+  return wall.allComments.filter(
+    (cm) => cm.content.toLowerCase().includes(kw) || cm.nickname.toLowerCase().includes(kw)
+  )
+})
+
+const paged = computed(() => {
+  const start = (page.value - 1) * pageSize.value
+  return filtered.value.slice(start, start + pageSize.value)
+})
+
+async function removeOne(row) {
+  await ElMessageBox.confirm('删除后无法恢复，确定删除这条评论吗？', '警告', {
+    type: 'error',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消'
+  })
+  wall.removeComment(row.id)
+  ElMessage.success('删除成功')
+}
+
+async function batchDelete() {
+  await ElMessageBox.confirm(`确定删除选中的 ${selection.value.length} 条评论吗？删除后无法恢复。`, '警告', {
+    type: 'error',
+    confirmButtonText: '删除',
+    cancelButtonText: '取消'
+  })
+  wall.removeComments(selection.value.map((r) => r.id))
+  selection.value = []
+  ElMessage.success('批量删除成功')
+}
+</script>
+
+<style scoped>
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.search-input {
+  width: 260px;
+}
+.spacer {
+  flex: 1;
+}
+.cell-content {
+  font-size: 13px;
+  color: #303133;
+  line-height: 1.6;
+}
+.muted-2 {
+  color: #909399;
+}
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+</style>

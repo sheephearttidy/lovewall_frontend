@@ -1,0 +1,115 @@
+:root {
+  --love-pink: #f56c6c;
+  --love-pink-light: #fdf0f0;
+  --love-bg: #fff9fb;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #303133;
+  background: var(--love-bg);
+}
+
+a {
+  text-decoration: none;
+  color: var(--love-pink);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: #f3c7ce;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #ee9aa8;
+}
+
+/* 文本两行省略 */
+.text-ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 入场动画 */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.fade-in-up {
+  animation: fade-in-up 0.5s ease both;
+}
+
+/* 点赞飘心粒子 */
+@keyframes particle-up {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 0) scale(0.4);
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% + var(--dx, 0px)), -72px) scale(1.15);
+  }
+}
+
+/* 爱心弹跳 */
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.45);
+  }
+  70% {
+    transform: scale(0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+.heart-pop {
+  animation: heart-pop 0.4s ease;
+}
+
+/* 背景漂浮爱心 */
+@keyframes bg-float {
+  0% {
+    transform: translateY(108vh) rotate(0deg) scale(var(--s, 1));
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.5;
+  }
+  85% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(-10vh) rotate(28deg) scale(var(--s, 1));
+    opacity: 0;
+  }
+}
