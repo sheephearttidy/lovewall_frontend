@@ -4,6 +4,7 @@ import { genId } from '@/utils/format'
 import { seedConfessions } from '@/api/seed'
 import { useAuthStore } from './auth'
 import { useSettingsStore } from './settings'
+import { useNotificationStore } from './notification'
 import { filterSensitiveText } from '@/utils/sensitive'
 import { checkThrottle, markThrottle } from '@/utils/throttle'
 
@@ -13,6 +14,12 @@ const KEY = 'confessions'
 const POST_COOLDOWN = 60 * 1000
 /** 发表评论冷却：30 秒 / 条 */
 const COMMENT_COOLDOWN = 30 * 1000
+
+/** 截断文本用于通知摘要 */
+function truncate(text, n) {
+  const t = String(text || '')
+  return t.length > n ? t.slice(0, n) + '…' : t
+}
 
 export const useWallStore = defineStore('wall', {
   state: () => ({
@@ -117,7 +124,7 @@ export const useWallStore = defineStore('wall', {
     },
 
     /**
-     * 点赞 / 取消点赞
+     * 点赞 / 取消点赞（点赞时通知表白作者）
      */
     toggleLike(id) {
       const auth = useAuthStore()
@@ -133,6 +140,15 @@ export const useWallStore = defineStore('wall', {
       }
       c.likes.push(uid)
       this._persist()
+      // 通知表白作者
+      const notify = useNotificationStore()
+      notify.push({
+        type: 'like',
+        toUserId: c.authorId,
+        fromUser: auth.currentUser,
+        confessionId: c.id,
+        text: `赞了你的表白「${truncate(c.content, 20)}」`
+      })
       return true
     },
 
@@ -181,6 +197,33 @@ export const useWallStore = defineStore('wall', {
       c.comments.push(cm)
       markThrottle(`comment:${auth.currentUser.id}`)
       this._persist()
+
+      // 通知：表白作者 + 被回复评论的作者（同人只发一条，自己给自己的不发）
+      const notify = useNotificationStore()
+      const receivers = new Set()
+      if (replyTo) {
+        const target = c.comments.find((x) => x.id === replyTo.id)
+        if (target?.authorId && target.authorId !== auth.currentUser.id) {
+          receivers.add(target.authorId)
+          notify.push({
+            type: 'reply',
+            toUserId: target.authorId,
+            fromUser: auth.currentUser,
+            confessionId: c.id,
+            text: `回复了你的评论「${truncate(target.content, 15)}」：${truncate(cm.content, 15)}`
+          })
+        }
+      }
+      if (c.authorId && !receivers.has(c.authorId) && c.authorId !== auth.currentUser.id) {
+        notify.push({
+          type: 'comment',
+          toUserId: c.authorId,
+          fromUser: auth.currentUser,
+          confessionId: c.id,
+          text: `评论了你的表白「${truncate(c.content, 15)}」：${truncate(cm.content, 15)}`
+        })
+      }
+
       return { comment: cm, filtered }
     },
 
@@ -201,6 +244,19 @@ export const useWallStore = defineStore('wall', {
     },
 
     /* ================= 管理员操作 ================= */
+
+    /**
+     * 用户删除自己发布的表白（仅作者本人）
+     */
+    deleteOwnConfession(id) {
+      const auth = useAuthStore()
+      if (!auth.isLoggedIn) throw new Error('请先登录')
+      const c = this.confessions.find((x) => x.id === id)
+      if (!c) throw new Error('表白不存在')
+      if (c.authorId !== auth.currentUser.id) throw new Error('只能删除自己发布的表白')
+      this.confessions = this.confessions.filter((x) => x.id !== id)
+      this._persist()
+    },
 
     setConfessionStatus(id, status) {
       const c = this.confessions.find((x) => x.id === id)

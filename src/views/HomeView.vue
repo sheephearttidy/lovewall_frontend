@@ -7,6 +7,7 @@
       <div class="brand">💌 Lovewall</div>
       <div class="right">
         <template v-if="auth.isLoggedIn">
+          <NotificationBell />
           <el-button v-if="auth.isAdmin" text @click="router.push('/admin')">
             <el-icon><Setting /></el-icon>管理后台
           </el-button>
@@ -107,7 +108,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
@@ -118,6 +119,7 @@ import FloatingHearts from '@/components/FloatingHearts.vue'
 import ConfessionCard from '@/components/ConfessionCard.vue'
 import PostDialog from '@/components/PostDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
+import NotificationBell from '@/components/NotificationBell.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -186,20 +188,24 @@ function openShare(confession) {
   shareVisible.value = true
 }
 
-onMounted(() => {
-  // 处理分享链接：?post=xxx 自动定位并高亮
-  const postId = route.query.post
-  if (typeof postId === 'string' && postId) {
-    setTimeout(() => {
-      const el = document.getElementById('card-' + postId)
-      if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        highlightId.value = postId
-        setTimeout(() => (highlightId.value = ''), 3600)
-      }
-    }, 300)
-  }
-})
+// 分享链接 / 通知点击：?post=xxx 自动定位并高亮
+function locatePost(postId) {
+  if (!postId) return
+  setTimeout(() => {
+    const el = document.getElementById('card-' + postId)
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      highlightId.value = postId
+      setTimeout(() => (highlightId.value = ''), 3600)
+    }
+  }, 300)
+}
+
+watch(
+  () => route.query.post,
+  (postId) => locatePost(typeof postId === 'string' ? postId : ''),
+  { immediate: true }
+)
 </script>
 
 <style scoped>

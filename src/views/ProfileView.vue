@@ -75,12 +75,44 @@
                 <el-input v-model="pwdForm.confirm" type="password" placeholder="再次输入新密码" show-password />
               </el-form-item>
               <el-form-item>
-                <el-button type="primary" round :loading="savingPwd" @click="savePassword">修改密码</el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </el-col>
+              <el-button type="primary" round :loading="savingPwd" @click="savePassword">修改密码</el-button>
+            </el-form-item>
+          </el-form>
+        </el-card>
+      </el-col>
       </el-row>
+
+      <!-- 我的表白 -->
+      <el-card shadow="never" class="panel">
+        <template #header>
+          <div class="panel-title">
+            <el-icon><ChatDotRound /></el-icon>我的表白
+            <span class="my-count">共 {{ myConfessions.length }} 条</span>
+          </div>
+        </template>
+
+        <div v-if="myConfessions.length" class="my-list">
+          <div v-for="c in myConfessions" :key="c.id" class="my-item" :class="{ hidden: c.status !== 'normal' }">
+            <div class="my-item-main">
+              <div class="my-item-to">To：{{ c.to }}</div>
+              <div class="my-item-content">{{ c.content }}</div>
+              <div class="my-item-meta">
+                <span>{{ timeAgo(c.createdAt) }}</span>
+                <span>❤ {{ c.likes.length }}</span>
+                <span>💬 {{ c.comments.length }}</span>
+                <el-tag v-if="c.status !== 'normal'" size="small" type="info">已被管理员隐藏</el-tag>
+              </div>
+            </div>
+            <div class="my-item-ops">
+              <el-button text size="small" @click="locatePost(c.id)">查看</el-button>
+              <el-button text size="small" type="danger" @click="removeMine(c)">删除</el-button>
+            </div>
+          </div>
+        </div>
+        <el-empty v-else description="还没有发布过表白，去写第一条吧～" :image-size="70">
+          <el-button type="primary" round @click="router.push('/')">去发布</el-button>
+        </el-empty>
+      </el-card>
     </div>
   </div>
 </template>
@@ -88,11 +120,11 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
 import { useWallStore } from '@/stores/wall'
 import { AVATAR_COLORS } from '@/constants/colors'
-import { formatDateTime } from '@/utils/format'
+import { formatDateTime, timeAgo } from '@/utils/format'
 import FloatingHearts from '@/components/FloatingHearts.vue'
 
 const router = useRouter()
@@ -141,6 +173,36 @@ function saveProfile() {
     ElMessage.error(e.message)
   } finally {
     savingProfile.value = false
+  }
+}
+
+/* ================= 我的表白 ================= */
+
+const myConfessions = computed(() =>
+  wall.confessions
+    .filter((c) => c.authorId === auth.currentUser?.id)
+    .sort((a, b) => b.createdAt - a.createdAt)
+)
+
+function locatePost(postId) {
+  router.push({ path: '/', query: { post: postId } })
+}
+
+async function removeMine(c) {
+  try {
+    await ElMessageBox.confirm(
+      `删除后无法恢复，确定删除这条发给「${c.to}」的表白吗？`,
+      '删除表白',
+      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' }
+    )
+  } catch {
+    return
+  }
+  try {
+    wall.deleteOwnConfession(c.id)
+    ElMessage.success('已删除')
+  } catch (e) {
+    ElMessage.error(e.message)
   }
 }
 
@@ -261,5 +323,62 @@ async function savePassword() {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+.my-count {
+  font-size: 12px;
+  font-weight: 400;
+  color: #909399;
+  margin-left: 8px;
+}
+.my-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.my-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid #f0f0f2;
+  border-radius: 10px;
+  padding: 12px 14px;
+  transition: background 0.15s;
+}
+.my-item:hover {
+  background: #fdf8f9;
+}
+.my-item.hidden .my-item-content {
+  color: #c0c4cc;
+  text-decoration: line-through;
+}
+.my-item-main {
+  flex: 1;
+  min-width: 0;
+}
+.my-item-to {
+  font-size: 13px;
+  font-weight: 600;
+  color: #c94f6d;
+  margin-bottom: 4px;
+}
+.my-item-content {
+  font-size: 13px;
+  color: #303133;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.my-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #c0c4cc;
+}
+.my-item-ops {
+  flex-shrink: 0;
 }
 </style>
