@@ -155,7 +155,13 @@ const filtered = computed(() => {
     list = list.filter((c) => c.color === activeColor.value)
   }
   if (sortBy.value === 'hot') {
-    return [...list].sort((a, b) => b.likes.length - a.likes.length || b.createdAt - a.createdAt)
+    // 最热排序：置顶仍优先，其余按点赞数/时间
+    return [...list].sort((a, b) => {
+      const pa = a.pinned ? 1 : 0
+      const pb = b.pinned ? 1 : 0
+      if (pa !== pb) return pb - pa
+      return b.likes.length - a.likes.length || b.createdAt - a.createdAt
+    })
   }
   return list
 })

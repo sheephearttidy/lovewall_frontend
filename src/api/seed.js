@@ -104,7 +104,9 @@ export function seedConfessions() {
         comment('cm-105', 'u-1001', '小美', '下次帮我也要一勺！', 2)
       ],
       createdAt: hoursAgo(12),
-      status: 'normal'
+      status: 'normal',
+      pinned: true,
+      pinnedAt: hoursAgo(1)
     },
     {
       to: '夜跑时偶遇的橙色跑鞋女生',

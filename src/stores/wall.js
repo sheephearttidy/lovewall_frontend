@@ -14,6 +14,17 @@ const KEY = 'confessions'
 const POST_COOLDOWN = 60 * 1000
 /** 发表评论冷却：30 秒 / 条 */
 const COMMENT_COOLDOWN = 30 * 1000
+/** 置顶上限：3 条 */
+const MAX_PINNED = 3
+
+/** 置顶排序权重：置顶在前，同为置顶按置顶时间倒序 */
+function byPinnedFirst(a, b) {
+  const pa = a.pinned ? 1 : 0
+  const pb = b.pinned ? 1 : 0
+  if (pa !== pb) return pb - pa
+  if (pa === 1) return (b.pinnedAt || 0) - (a.pinnedAt || 0)
+  return b.createdAt - a.createdAt
+}
 
 /** 截断文本用于通知摘要 */
 function truncate(text, n) {
@@ -28,12 +39,16 @@ export const useWallStore = defineStore('wall', {
   }),
 
   getters: {
-    /** 前台可见（正常状态）的表白，按时间倒序 */
+    /** 前台可见（正常状态）的表白：置顶优先，其余按时间倒序 */
     visible(state) {
       return state.confessions
         .filter((c) => c.status === 'normal')
         .slice()
-        .sort((a, b) => b.createdAt - a.createdAt)
+        .sort(byPinnedFirst)
+    },
+    /** 当前置顶条数（后台管理用） */
+    pinnedCount(state) {
+      return state.confessions.filter((c) => c.pinned).length
     },
     totalConfessions: (s) => s.confessions.length,
     totalLikes: (s) => s.confessions.reduce((n, c) => n + (c.likes?.length || 0), 0),
@@ -61,7 +76,8 @@ export const useWallStore = defineStore('wall', {
       if (this.initialized) return
       const data = getItem(KEY, null)
       if (Array.isArray(data) && data.length) {
-        this.confessions = data
+        // 兼容旧数据：补充 pinned 字段（置顶功能上线前的存量表白）
+        this.confessions = data.map((c) => (c.pinned === undefined ? { ...c, pinned: false } : c))
       } else {
         this.confessions = seedConfessions()
         this._persist()
@@ -115,7 +131,9 @@ export const useWallStore = defineStore('wall', {
         likes: [],
         comments: [],
         createdAt: Date.now(),
-        status: 'normal'
+        status: 'normal',
+        pinned: false,
+        pinnedAt: null
       }
       this.confessions.unshift(item)
       markThrottle(`post:${auth.currentUser.id}`)
@@ -264,6 +282,29 @@ export const useWallStore = defineStore('wall', {
         c.status = status
         this._persist()
       }
+    },
+
+    /**
+     * 置顶 / 取消置顶（管理员操作，置顶上限 MAX_PINNED 条）
+     * @returns {boolean} 操作后的置顶状态
+     */
+    togglePinned(id) {
+      const c = this.confessions.find((x) => x.id === id)
+      if (!c) throw new Error('表白不存在')
+      if (c.pinned) {
+        c.pinned = false
+        c.pinnedAt = null
+        this._persist()
+        return false
+      }
+      const count = this.confessions.filter((x) => x.pinned).length
+      if (count >= MAX_PINNED) {
+        throw new Error(`最多只能置顶 ${MAX_PINNED} 条表白，请先取消其他置顶`)
+      }
+      c.pinned = true
+      c.pinnedAt = Date.now()
+      this._persist()
+      return true
     },
 
     removeConfession(id) {

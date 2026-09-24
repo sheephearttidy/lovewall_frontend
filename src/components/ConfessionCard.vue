@@ -6,6 +6,7 @@
     :style="cardStyle"
   >
     <span class="pin" :style="{ background: color.header }"></span>
+    <span v-if="confession.pinned" class="pinned-badge">📌 置顶</span>
 
     <div class="card-to" :style="{ color: color.header }">To：{{ confession.to }}</div>
     <p class="card-content">{{ confession.content }}</p>
@@ -162,6 +163,20 @@ function spawnParticles() {
   border-radius: 50%;
   transform: translateX(-50%);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.pinned-badge {
+  position: absolute;
+  top: -10px;
+  left: 12px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f56c6c, #e05c7e);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 1px;
+  box-shadow: 0 2px 8px rgba(245, 108, 108, 0.4);
+  z-index: 2;
 }
 .card-to {
   font-weight: 700;

@@ -51,6 +51,12 @@
           <span v-else class="muted">-</span>
         </template>
       </el-table-column>
+      <el-table-column label="置顶" width="80" align="center">
+        <template #default="{ row }">
+          <el-tag v-if="row.pinned" type="danger" effect="light" round size="small">📌 置顶</el-tag>
+          <span v-else class="muted">-</span>
+        </template>
+      </el-table-column>
       <el-table-column label="状态" width="84" align="center">
         <template #default="{ row }">
           <el-tag :type="row.status === 'normal' ? 'success' : 'info'">
@@ -61,9 +67,12 @@
       <el-table-column label="发布时间" width="150">
         <template #default="{ row }">{{ formatDateTime(row.createdAt) }}</template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="showDetail(row)">详情</el-button>
+          <el-button link :type="row.pinned ? 'info' : 'danger'" @click="togglePinned(row)">
+            {{ row.pinned ? '取消置顶' : '置顶' }}
+          </el-button>
           <el-button link :type="row.status === 'normal' ? 'warning' : 'success'" @click="toggleStatus(row)">
             {{ row.status === 'normal' ? '隐藏' : '恢复' }}
           </el-button>
@@ -96,6 +105,14 @@
           <el-tag :type="detail.status === 'normal' ? 'success' : 'info'">
             {{ detail.status === 'normal' ? '正常' : '已隐藏' }}
           </el-tag>
+        </div>
+        <div class="detail-item">
+          <span class="dl">置顶</span>
+          <template v-if="detail.pinned">
+            <el-tag type="danger" effect="light" round size="small">📌 已置顶</el-tag>
+            <span class="muted" style="margin-left: 8px">{{ formatDateTime(detail.pinnedAt) }}</span>
+          </template>
+          <span v-else class="muted">否</span>
         </div>
         <div class="detail-item"><span class="dl">内容</span>{{ detail.content }}</div>
         <div v-if="detail.images.length" class="detail-images">
@@ -154,7 +171,8 @@ const filtered = computed(() => {
   if (statusFilter.value) {
     list = list.filter((c) => c.status === statusFilter.value)
   }
-  return list.slice().sort((a, b) => b.createdAt - a.createdAt)
+  // 置顶优先，其余按时间倒序
+  return list.slice().sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || b.createdAt - a.createdAt)
 })
 
 const paged = computed(() => {
@@ -165,6 +183,15 @@ const paged = computed(() => {
 function showDetail(row) {
   detail.value = row
   detailVisible.value = true
+}
+
+function togglePinned(row) {
+  try {
+    const pinned = wall.togglePinned(row.id)
+    ElMessage.success(pinned ? '已置顶，前台将优先展示' : '已取消置顶')
+  } catch (e) {
+    ElMessage.warning(e.message)
+  }
 }
 
 async function toggleStatus(row) {
