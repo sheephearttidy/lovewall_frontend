@@ -6,6 +6,7 @@
     <nav class="topbar">
       <div class="brand">💌 Lovewall</div>
       <div class="right">
+        <ThemeToggle />
         <template v-if="auth.isLoggedIn">
           <NotificationBell />
           <el-button v-if="auth.isAdmin" text @click="router.push('/admin')">
@@ -120,6 +121,7 @@ import ConfessionCard from '@/components/ConfessionCard.vue'
 import PostDialog from '@/components/PostDialog.vue'
 import ShareDialog from '@/components/ShareDialog.vue'
 import NotificationBell from '@/components/NotificationBell.vue'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -232,7 +234,7 @@ watch(
   align-items: center;
   justify-content: space-between;
   padding: 12px 28px;
-  background: rgba(255, 255, 255, 0.75);
+  background: var(--overlay);
   backdrop-filter: blur(10px);
 }
 .brand {
@@ -251,7 +253,7 @@ watch(
   gap: 6px;
   cursor: pointer;
   font-size: 14px;
-  color: #303133;
+  color: var(--text-1);
   outline: none;
 }
 .avatar {
@@ -269,7 +271,7 @@ watch(
 .hero {
   position: relative;
   padding: 72px 20px 56px;
-  background: linear-gradient(135deg, #ffd6e0 0%, #fff5f7 55%, #e3f2ff 100%);
+  background: var(--hero-grad);
   text-align: center;
   z-index: 1;
 }
@@ -277,12 +279,12 @@ watch(
   margin: 0 0 14px;
   font-size: 42px;
   line-height: 1.35;
-  color: #c94f6d;
+  color: var(--hero-title);
   letter-spacing: 2px;
 }
 .slogan {
   margin: 0 0 26px;
-  color: #8d6e77;
+  color: var(--hero-sub);
   font-size: 15px;
   letter-spacing: 1px;
 }
@@ -308,11 +310,11 @@ watch(
 }
 .stat b {
   font-size: 26px;
-  color: #e05c7e;
+  color: var(--hero-stat);
 }
 .stat span {
   font-size: 13px;
-  color: #a08890;
+  color: var(--hero-sub);
 }
 
 /* 表白墙 */
@@ -345,10 +347,10 @@ watch(
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid #f0d5dc;
+  border: 1px solid var(--border-soft);
   border-radius: 16px;
-  background: #fff;
-  color: #606266;
+  background: var(--chip-bg);
+  color: var(--text-2);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
@@ -397,7 +399,7 @@ watch(
   z-index: 1;
   text-align: center;
   padding: 20px;
-  color: #c4a9b0;
+  color: var(--text-4);
   font-size: 13px;
 }
 

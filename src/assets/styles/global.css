@@ -2,6 +2,51 @@
   --love-pink: #f56c6c;
   --love-pink-light: #fdf0f0;
   --love-bg: #fff9fb;
+
+  /* 语义色（亮色） */
+  --surface: #ffffff;
+  --surface-2: #f5f7fa;
+  --overlay: rgba(255, 255, 255, 0.75);
+  --text-1: #303133;
+  --text-2: #606266;
+  --text-3: #909399;
+  --text-4: #c0c4cc;
+  --border-soft: #f0d5dc;
+  --hero-grad: linear-gradient(135deg, #ffd6e0 0%, #fff5f7 55%, #e3f2ff 100%);
+  --hero-title: #c94f6d;
+  --hero-sub: #8d6e77;
+  --hero-stat: #e05c7e;
+  --chip-bg: #ffffff;
+  --card-shadow: rgba(245, 108, 108, 0.08);
+  --card-shadow-hover: rgba(245, 108, 108, 0.16);
+  --scrollbar: #f3c7ce;
+  --scrollbar-hover: #ee9aa8;
+}
+
+/* 暗色模式：粉调深紫底，保持浪漫氛围 */
+html.dark {
+  --love-pink-light: #3a2530;
+  --love-bg: #17121a;
+  --surface: #241c28;
+  --surface-2: #1c161f;
+  --overlay: rgba(23, 18, 26, 0.82);
+  --text-1: #e8e0e8;
+  --text-2: #c3b6c1;
+  --text-3: #8a7d8c;
+  --text-4: #665c68;
+  --border-soft: #453750;
+  --hero-grad: linear-gradient(135deg, #3a2233 0%, #241a26 55%, #1b2436 100%);
+  --hero-title: #f09cb2;
+  --hero-sub: #a48d99;
+  --hero-stat: #f09cb2;
+  --chip-bg: #241c28;
+  --card-shadow: rgba(0, 0, 0, 0.35);
+  --card-shadow-hover: rgba(0, 0, 0, 0.55);
+  --scrollbar: #453750;
+  --scrollbar-hover: #5c4866;
+
+  /* Element Plus 主色微调：暗色下用稍亮的粉 */
+  --el-color-primary: #f78c8c;
 }
 
 * {
@@ -18,7 +63,7 @@ body {
   margin: 0;
   font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  color: #303133;
+  color: var(--text-1);
   background: var(--love-bg);
 }
 
@@ -32,11 +77,11 @@ a {
   height: 6px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #f3c7ce;
+  background: var(--scrollbar);
   border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #ee9aa8;
+  background: var(--scrollbar-hover);
 }
 
 /* 文本两行省略 */
@@ -112,4 +157,9 @@ a {
     transform: translateY(-10vh) rotate(28deg) scale(var(--s, 1));
     opacity: 0;
   }
+}
+
+/* 暗色下漂浮爱心降低存在感 */
+html.dark .floating-hearts .fh {
+  opacity: 0.45;
 }

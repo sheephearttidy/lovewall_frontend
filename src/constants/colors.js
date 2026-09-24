@@ -1,13 +1,13 @@
 /**
- * 表白墙便签颜色主题
+ * 表白墙便签颜色主题（bg 为亮色背景，darkBg 为暗色模式背景）
  */
 export const WALL_COLORS = [
-  { key: 'pink', label: '浪漫粉', bg: '#fff0f5', header: '#f56c6c' },
-  { key: 'blue', label: '天空蓝', bg: '#eef6ff', header: '#5a9cf8' },
-  { key: 'green', label: '清新绿', bg: '#eefaf2', header: '#4faf7d' },
-  { key: 'yellow', label: '柠檬黄', bg: '#fff9e6', header: '#d9a406' },
-  { key: 'purple', label: '梦幻紫', bg: '#f5efff', header: '#9370db' },
-  { key: 'orange', label: '活力橙', bg: '#fff3e8', header: '#f08c3a' }
+  { key: 'pink', label: '浪漫粉', bg: '#fff0f5', darkBg: '#33202a', header: '#f56c6c' },
+  { key: 'blue', label: '天空蓝', bg: '#eef6ff', darkBg: '#1c2a3d', header: '#5a9cf8' },
+  { key: 'green', label: '清新绿', bg: '#eefaf2', darkBg: '#172e25', header: '#4faf7d' },
+  { key: 'yellow', label: '柠檬黄', bg: '#fff9e6', darkBg: '#302a18', header: '#d9a406' },
+  { key: 'purple', label: '梦幻紫', bg: '#f5efff', darkBg: '#272038', header: '#9370db' },
+  { key: 'orange', label: '活力橙', bg: '#fff3e8', darkBg: '#33241a', header: '#f08c3a' }
 ]
 
 export function colorOf(key) {

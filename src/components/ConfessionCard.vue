@@ -58,6 +58,7 @@
 import { computed, ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useWallStore } from '@/stores/wall'
+import { useThemeStore } from '@/stores/theme'
 import { timeAgo } from '@/utils/format'
 import { colorOf } from '@/constants/colors'
 import CommentPanel from './CommentPanel.vue'
@@ -70,6 +71,7 @@ const props = defineProps({
 defineEmits(['open-login', 'share'])
 
 const wall = useWallStore()
+const theme = useThemeStore()
 
 const color = computed(() => colorOf(props.confession.color))
 const liked = computed(() => wall.hasLiked(props.confession))
@@ -78,11 +80,11 @@ const animating = ref(false)
 const particles = ref([])
 let particleId = 0
 
-// 便签轻微旋转，营造贴纸墙效果
+// 便签轻微旋转，营造贴纸墙效果；暗色模式使用便签深色变体
 const cardStyle = computed(() => {
   const rot = ((props.index % 3) - 1) * 1.1
   return {
-    background: color.value.bg,
+    background: theme.isDark ? color.value.darkBg : color.value.bg,
     borderColor: color.value.header + '55',
     '--rot': rot + 'deg'
   }
@@ -141,13 +143,13 @@ function spawnParticles() {
 }
 .confession-card.highlight {
   animation: highlight-pulse 1.1s ease-in-out 3;
-  border-color: #c94f6d;
+  border-color: var(--hero-title);
   z-index: 3;
 }
 @keyframes highlight-pulse {
   0%,
   100% {
-    box-shadow: 0 4px 14px rgba(245, 108, 108, 0.08);
+    box-shadow: 0 4px 14px var(--card-shadow);
   }
   50% {
     box-shadow: 0 0 0 5px rgba(201, 79, 109, 0.35);
@@ -191,7 +193,7 @@ function spawnParticles() {
   margin: 0;
   font-size: 14px;
   line-height: 1.75;
-  color: #303133;
+  color: var(--text-1);
   word-break: break-all;
   white-space: pre-wrap;
 }
@@ -223,7 +225,7 @@ function spawnParticles() {
   gap: 8px;
   margin-top: 12px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-3);
 }
 .from {
   overflow: hidden;
@@ -243,7 +245,7 @@ function spawnParticles() {
   align-items: center;
   gap: 5px;
   font-size: 13px;
-  color: #909399;
+  color: var(--text-3);
   cursor: pointer;
   user-select: none;
   transition: color 0.2s;

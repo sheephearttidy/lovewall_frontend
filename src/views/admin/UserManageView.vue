@@ -249,15 +249,15 @@ async function createUser() {
 }
 .nickname {
   font-size: 14px;
-  color: #303133;
+  color: var(--text-1);
   font-weight: 500;
 }
 .username {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 .muted {
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 .pagination {
   display: flex;

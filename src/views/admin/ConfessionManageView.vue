@@ -243,11 +243,11 @@ async function batchDelete() {
 }
 .cell-content {
   font-size: 13px;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.6;
 }
 .muted {
-  color: #c0c4cc;
+  color: var(--text-4);
   font-size: 12px;
 }
 .pagination {
@@ -258,13 +258,13 @@ async function batchDelete() {
 .detail-item {
   margin-bottom: 10px;
   font-size: 14px;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.7;
 }
 .dl {
   display: inline-block;
   width: 70px;
-  color: #909399;
+  color: var(--text-3);
 }
 .detail-images {
   display: flex;
@@ -280,10 +280,10 @@ async function batchDelete() {
 }
 .detail-comment {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-2);
   line-height: 1.8;
 }
 .reply-inline {
-  color: #c94f6d;
+  color: var(--hero-title);
 }
 </style>

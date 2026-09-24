@@ -132,7 +132,7 @@ function onSwitch(type, val) {
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-1);
 }
 .setting-row {
   display: flex;
@@ -148,12 +148,12 @@ function onSwitch(type, val) {
 .setting-name {
   font-size: 15px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-1);
   margin-bottom: 4px;
 }
 .setting-desc {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-3);
   line-height: 1.7;
 }
 .flow-steps {
@@ -163,12 +163,12 @@ function onSwitch(type, val) {
   gap: 10px;
 }
 .arrow {
-  color: #c0c4cc;
+  color: var(--text-4);
   font-size: 14px;
 }
 .muted-tip {
   margin-top: 12px;
   font-size: 13px;
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 </style>

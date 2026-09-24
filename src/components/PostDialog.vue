@@ -193,7 +193,7 @@ async function submit() {
   border: 1.5px solid;
   border-radius: 14px;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-2);
   cursor: pointer;
   transition: all 0.2s;
   user-select: none;
@@ -202,7 +202,7 @@ async function submit() {
   transform: translateY(-1px);
 }
 .swatch.active {
-  box-shadow: 0 0 0 2px #fff, 0 0 0 4px var(--el-color-primary);
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--el-color-primary);
 }
 .swatch-dot {
   width: 8px;
@@ -218,7 +218,7 @@ async function submit() {
 }
 .upload-tip {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
   margin-top: 6px;
 }
 </style>

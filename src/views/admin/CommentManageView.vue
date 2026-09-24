@@ -120,11 +120,11 @@ async function batchDelete() {
 }
 .cell-content {
   font-size: 13px;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.6;
 }
 .muted-2 {
-  color: #909399;
+  color: var(--text-3);
 }
 .pagination {
   display: flex;

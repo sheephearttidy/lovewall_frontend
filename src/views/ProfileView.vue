@@ -231,7 +231,7 @@ async function savePassword() {
 .profile-page {
   position: relative;
   min-height: 100%;
-  background: linear-gradient(150deg, #ffd6e0 0%, #fff5f7 50%, #e8eaf6 100%);
+  background: var(--hero-grad);
   padding: 32px 20px 60px;
 }
 .profile-container {
@@ -244,10 +244,10 @@ async function savePassword() {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #fff;
+  background: var(--surface);
   border-radius: 16px;
   padding: 22px 24px;
-  box-shadow: 0 10px 28px rgba(200, 100, 130, 0.14);
+  box-shadow: 0 10px 28px var(--card-shadow-hover);
   margin-bottom: 16px;
 }
 .big-avatar {
@@ -268,12 +268,12 @@ async function savePassword() {
 }
 .header-info h2 {
   margin: 0 0 6px;
-  color: #c94f6d;
+  color: var(--hero-title);
   font-size: 20px;
 }
 .meta {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-3);
   line-height: 1.7;
 }
 .panel {
@@ -285,7 +285,7 @@ async function savePassword() {
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-1);
 }
 .color-row {
   display: flex;
@@ -327,7 +327,7 @@ async function savePassword() {
 .my-count {
   font-size: 12px;
   font-weight: 400;
-  color: #909399;
+  color: var(--text-3);
   margin-left: 8px;
 }
 .my-list {
@@ -339,16 +339,16 @@ async function savePassword() {
   display: flex;
   align-items: center;
   gap: 12px;
-  border: 1px solid #f0f0f2;
+  border: 1px solid var(--border-soft);
   border-radius: 10px;
   padding: 12px 14px;
   transition: background 0.15s;
 }
 .my-item:hover {
-  background: #fdf8f9;
+  background: var(--love-pink-light);
 }
 .my-item.hidden .my-item-content {
-  color: #c0c4cc;
+  color: var(--text-4);
   text-decoration: line-through;
 }
 .my-item-main {
@@ -358,12 +358,12 @@ async function savePassword() {
 .my-item-to {
   font-size: 13px;
   font-weight: 600;
-  color: #c94f6d;
+  color: var(--hero-title);
   margin-bottom: 4px;
 }
 .my-item-content {
   font-size: 13px;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.6;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -376,7 +376,7 @@ async function savePassword() {
   gap: 14px;
   margin-top: 6px;
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 .my-item-ops {
   flex-shrink: 0;

@@ -12,7 +12,7 @@
       <div
         class="share-preview"
         :style="{
-          background: colorOf(confession.color).bg,
+          background: theme.isDark ? colorOf(confession.color).darkBg : colorOf(confession.color).bg,
           borderColor: colorOf(confession.color).border
         }"
       >
@@ -45,6 +45,9 @@ import { ElMessage } from 'element-plus'
 import { Link, DocumentCopy } from '@element-plus/icons-vue'
 import { timeAgo } from '@/utils/format'
 import { colorOf } from '@/constants/colors'
+import { useThemeStore } from '@/stores/theme'
+
+const theme = useThemeStore()
 
 const visible = defineModel({ type: Boolean, default: false })
 const props = defineProps({
@@ -99,7 +102,7 @@ function copyText() {
 }
 .s-content {
   margin: 0 0 10px;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.7;
   font-size: 14px;
   white-space: pre-wrap;
@@ -109,7 +112,7 @@ function copyText() {
 }
 .s-meta {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-3);
 }
 .share-actions {
   display: flex;
@@ -123,6 +126,6 @@ function copyText() {
 .share-tip {
   margin-top: 14px;
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 </style>

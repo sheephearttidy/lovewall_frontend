@@ -137,32 +137,32 @@ function submit() {
 .nickname {
   font-size: 13px;
   font-weight: 600;
-  color: #606266;
+  color: var(--text-2);
 }
 .reply-tag {
   font-size: 12px;
-  color: #c94f6d;
+  color: var(--hero-title);
   background: rgba(201, 79, 109, 0.08);
   border-radius: 999px;
   padding: 0 8px;
 }
 .time {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 .reply-btn {
   font-size: 12px;
-  color: #a0a4a8;
+  color: var(--text-3);
   cursor: pointer;
   margin-left: auto;
   transition: color 0.15s;
 }
 .reply-btn:hover {
-  color: #c94f6d;
+  color: var(--hero-title);
 }
 .text {
   font-size: 13px;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.6;
   margin-top: 2px;
   word-break: break-all;

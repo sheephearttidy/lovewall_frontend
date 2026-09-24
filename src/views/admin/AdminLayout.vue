@@ -45,6 +45,7 @@
           <el-breadcrumb-item v-if="route.meta.title">{{ route.meta.title }}</el-breadcrumb-item>
         </el-breadcrumb>
         <div class="header-right">
+          <ThemeToggle />
           <el-button text @click="router.push('/')">
             <el-icon><House /></el-icon>
             <span class="hide-sm">前台表白墙</span>
@@ -79,6 +80,7 @@
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -141,8 +143,8 @@ function onCommand(cmd) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  background: var(--surface);
+  box-shadow: 0 1px 4px var(--card-shadow);
   z-index: 5;
 }
 .header-right {
@@ -155,7 +157,7 @@ function onCommand(cmd) {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  color: #303133;
+  color: var(--text-1);
   font-size: 14px;
   outline: none;
 }
@@ -170,7 +172,7 @@ function onCommand(cmd) {
   justify-content: center;
 }
 .admin-main {
-  background: #f5f7fa;
+  background: var(--surface-2);
   padding: 18px;
   overflow-y: auto;
 }

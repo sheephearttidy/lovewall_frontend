@@ -98,26 +98,26 @@ async function submit() {
   align-items: center;
   justify-content: center;
   padding: 24px;
-  background: linear-gradient(150deg, #ffd6e0 0%, #fff5f7 50%, #e8eaf6 100%);
+  background: var(--hero-grad);
 }
 .auth-card {
   position: relative;
   z-index: 1;
   width: 400px;
   max-width: 100%;
-  background: #fff;
+  background: var(--surface);
   border-radius: 18px;
   padding: 38px 36px 28px;
-  box-shadow: 0 16px 40px rgba(200, 100, 130, 0.18);
+  box-shadow: 0 16px 40px var(--card-shadow-hover);
   text-align: center;
 }
 h2 {
   margin: 0 0 8px;
-  color: #c94f6d;
+  color: var(--hero-title);
 }
 .sub {
   margin: 0 0 26px;
-  color: #a09298;
+  color: var(--text-3);
   font-size: 13px;
 }
 .submit-btn {
@@ -129,11 +129,11 @@ h2 {
   justify-content: space-between;
   margin-top: 18px;
   font-size: 13px;
-  color: #909399;
+  color: var(--text-3);
 }
 .divider-text {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
 }
 .demo {
   display: flex;

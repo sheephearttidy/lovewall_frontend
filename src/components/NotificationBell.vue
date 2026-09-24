@@ -75,7 +75,7 @@ function onClick(n) {
   margin-right: 14px;
 }
 .bell-icon {
-  color: #c94f6d;
+  color: var(--hero-title);
 }
 .notify-panel {
   margin: -4px -6px;
@@ -85,12 +85,12 @@ function onClick(n) {
   align-items: center;
   justify-content: space-between;
   padding: 4px 12px 10px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-soft);
 }
 .notify-title {
   font-weight: 600;
   font-size: 14px;
-  color: #303133;
+  color: var(--text-1);
 }
 .notify-ops {
   display: inline-flex;
@@ -111,30 +111,30 @@ function onClick(n) {
   position: relative;
 }
 .notify-item:hover {
-  background: #fdf3f5;
+  background: var(--love-pink-light);
 }
 .notify-item.unread {
-  background: #fff8f9;
+  background: var(--love-pink-light);
 }
 .notify-icon {
   flex-shrink: 0;
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: #f5f6f8;
+  background: var(--surface-2);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 14px;
 }
 .notify-icon.like {
-  background: #fdeef0;
+  background: var(--love-pink-light);
 }
 .notify-icon.comment {
-  background: #eef4fd;
+  background: var(--surface-2);
 }
 .notify-icon.reply {
-  background: #f0f8f0;
+  background: var(--surface-2);
 }
 .notify-body {
   flex: 1;
@@ -142,17 +142,17 @@ function onClick(n) {
 }
 .notify-text {
   font-size: 13px;
-  color: #606266;
+  color: var(--text-2);
   line-height: 1.5;
   word-break: break-all;
 }
 .notify-text b {
-  color: #c94f6d;
+  color: var(--hero-title);
   font-weight: 600;
 }
 .notify-time {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
   margin-top: 2px;
 }
 .unread-dot {

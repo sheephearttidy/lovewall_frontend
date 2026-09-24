@@ -120,10 +120,10 @@ function barWidth(c) {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: #fff;
+  background: var(--surface);
   border-radius: 12px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 8px var(--card-shadow);
   margin-bottom: 16px;
 }
 .icon-wrap {
@@ -138,12 +138,12 @@ function barWidth(c) {
 .num {
   font-size: 26px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-1);
   line-height: 1.2;
 }
 .label {
   font-size: 13px;
-  color: #909399;
+  color: var(--text-3);
   margin-top: 2px;
 }
 .panel {
@@ -154,7 +154,7 @@ function barWidth(c) {
   align-items: center;
   gap: 6px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-1);
 }
 .bar-row {
   display: flex;
@@ -165,7 +165,7 @@ function barWidth(c) {
 .bar-name {
   width: 130px;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -178,8 +178,8 @@ function barWidth(c) {
   width: 18px;
   height: 18px;
   border-radius: 4px;
-  background: #f0f2f5;
-  color: #909399;
+  background: var(--surface-2);
+  color: var(--text-3);
   font-size: 12px;
   display: inline-flex;
   align-items: center;
@@ -201,7 +201,7 @@ function barWidth(c) {
 .bar-track {
   flex: 1;
   height: 12px;
-  background: #f5f7fa;
+  background: var(--surface-2);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -214,7 +214,7 @@ function barWidth(c) {
   width: 44px;
   text-align: right;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-3);
   flex-shrink: 0;
 }
 .color-row {
@@ -226,7 +226,7 @@ function barWidth(c) {
 .color-label {
   width: 76px;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -244,7 +244,7 @@ function barWidth(c) {
   width: 30px;
   text-align: right;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-3);
 }
 .feed-row {
   display: flex;
@@ -262,12 +262,12 @@ function barWidth(c) {
   flex: 1;
   min-width: 0;
   font-size: 13px;
-  color: #606266;
+  color: var(--text-2);
   line-height: 1.6;
 }
 .feed-time {
   font-size: 12px;
-  color: #c0c4cc;
+  color: var(--text-4);
   margin-top: 2px;
 }
 </style>
