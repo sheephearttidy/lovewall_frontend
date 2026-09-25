@@ -73,10 +73,10 @@ function cancelReply() {
   replyTarget.value = null
 }
 
-function submit() {
+async function submit() {
   if (!text.value.trim()) return
   try {
-    const { filtered } = wall.addComment(props.confession.id, text.value, replyTarget.value)
+    const { filtered } = await wall.addComment(props.confession.id, text.value, replyTarget.value)
     text.value = ''
     replyTarget.value = null
     ElMessage.success(filtered > 0 ? `评论成功（已过滤 ${filtered} 处敏感词）` : '评论成功')
@@ -176,5 +176,13 @@ function submit() {
 .input-row {
   display: flex;
   gap: 8px;
+}
+@media (max-width: 480px) {
+  .comment-item.is-reply {
+    margin-left: 20px;
+  }
+  .input-row {
+    flex-wrap: wrap;
+  }
 }
 </style>

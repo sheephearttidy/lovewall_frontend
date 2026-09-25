@@ -54,7 +54,7 @@ const ICONS = { like: '❤️', comment: '💬', reply: '↩️' }
 
 const router = useRouter()
 const notify = useNotificationStore()
-notify.init()
+notify.init().catch(() => {})
 
 const list = computed(() => notify.myNotifications)
 const unread = computed(() => notify.unreadCount)

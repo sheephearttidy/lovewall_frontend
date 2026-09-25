@@ -73,7 +73,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
 import { User, Message, Key, Lock } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
-import { sendVerificationCode, verifyEmailCode } from '@/api/email'
+import * as authApi from '@/api/auth'
 import FloatingHearts from '@/components/FloatingHearts.vue'
 
 const router = useRouter()
@@ -138,14 +138,25 @@ function startCooldown() {
   }, 1000)
 }
 
-function sendCode() {
-  const code = sendVerificationCode(resetUser.value.email)
-  ElNotification({
-    title: '验证码已发送（演示模式）',
-    message: `验证码 ${code}，5 分钟内有效。正式环境将通过邮件发送至 ${resetUser.value.email}`,
-    type: 'info',
-    duration: 10000
-  })
+const resetToken = ref('')
+
+async function sendCode() {
+  try {
+    const data = await authApi.sendEmailCode(resetUser.value.email)
+    if (data.code) {
+      ElNotification({
+        title: '验证码已发送（开发模式）',
+        message: `验证码 ${data.code}，5 分钟内有效`,
+        type: 'info',
+        duration: 10000
+      })
+    } else {
+      ElMessage.success(`验证码已发送至 ${resetUser.value.email}，5 分钟内有效`)
+    }
+  } catch (e) {
+    ElMessage.error(e.message || '发送验证码失败')
+    return
+  }
   startCooldown()
 }
 
@@ -156,8 +167,10 @@ async function verifyIdentity() {
     return
   }
   try {
-    resetUser.value = auth.findUserForReset(form.username, form.email)
-    sendCode()
+    const data = await auth.findUserForReset(form.username, form.email)
+    resetUser.value = data.user
+    resetToken.value = data.resetToken
+    await sendCode()
     step.value = 1
   } catch (e) {
     ElMessage.error(e.message)
@@ -167,11 +180,6 @@ async function verifyIdentity() {
 function verifyCode() {
   if (!/^\d{6}$/.test(form.emailCode.trim())) {
     ElMessage.warning('请输入 6 位数字验证码')
-    return
-  }
-  const res = verifyEmailCode(resetUser.value.email, form.emailCode.trim())
-  if (!res.ok) {
-    ElMessage.error(res.msg)
     return
   }
   step.value = 2
@@ -185,7 +193,7 @@ async function resetPassword() {
   }
   loading.value = true
   try {
-    auth.setPasswordByReset(resetUser.value.id, form.newPassword)
+    await auth.setPasswordByReset(resetUser.value.id, resetToken.value, form.newPassword, form.emailCode.trim())
     ElMessage.success('密码重置成功，请使用新密码登录')
     router.push('/login')
   } catch (e) {
@@ -203,7 +211,7 @@ async function resetPassword() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 16px;
   background: var(--hero-grad);
 }
 .auth-card {
@@ -213,7 +221,7 @@ async function resetPassword() {
   max-width: 100%;
   background: var(--surface);
   border-radius: 18px;
-  padding: 38px 36px 28px;
+  padding: 36px 32px 28px;
   box-shadow: 0 16px 40px var(--card-shadow-hover);
   text-align: center;
 }
@@ -239,6 +247,8 @@ h2 {
   margin-top: 18px;
   font-size: 13px;
   color: var(--text-3);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .inline-row {
   display: flex;
@@ -254,5 +264,16 @@ h2 {
 }
 .mb {
   margin-bottom: 18px;
+}
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 28px 20px 22px;
+    border-radius: 14px;
+  }
+  .extra {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 }
 </style>

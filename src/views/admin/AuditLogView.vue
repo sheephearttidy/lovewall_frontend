@@ -160,6 +160,7 @@ function clearAll() {
   margin-left: auto;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 .log-table {
   border-radius: 10px;
@@ -189,5 +190,15 @@ function clearAll() {
   display: flex;
   justify-content: flex-end;
   margin-top: 14px;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .pager-row {
+    justify-content: center;
+  }
+  .toolbar-right {
+    margin-left: 0;
+    width: 100%;
+  }
 }
 </style>

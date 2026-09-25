@@ -154,7 +154,7 @@ import { exportCsv } from '@/utils/csv'
 
 const wall = useWallStore()
 const audit = useAuditStore()
-wall.init()
+wall.init().catch(() => {})
 
 const keyword = ref('')
 const statusFilter = ref('')
@@ -192,9 +192,9 @@ function showDetail(row) {
   detailVisible.value = true
 }
 
-function togglePinned(row) {
+async function togglePinned(row) {
   try {
-    const pinned = wall.togglePinned(row.id)
+    const pinned = await wall.togglePinned(row.id)
     audit.log(pinned ? 'confession.pin' : 'confession.unpin', `${pinned ? '置顶' : '取消置顶'}表白「${row.to}」(${row.id})`)
     ElMessage.success(pinned ? '已置顶，前台将优先展示' : '已取消置顶')
   } catch (e) {
@@ -209,7 +209,7 @@ async function toggleStatus(row) {
     '提示',
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
-  wall.setConfessionStatus(row.id, next)
+  await wall.setConfessionStatus(row.id, next)
   audit.log(next === 'hidden' ? 'confession.hide' : 'confession.show', `${next === 'hidden' ? '隐藏' : '恢复'}表白「${row.to}」(${row.id})`)
   ElMessage.success(next === 'hidden' ? '已隐藏' : '已恢复')
 }
@@ -220,7 +220,7 @@ async function removeOne(row) {
     confirmButtonText: '删除',
     cancelButtonText: '取消'
   })
-  wall.removeConfession(row.id)
+  await wall.removeConfession(row.id)
   audit.log('confession.delete', `删除表白「${row.to}」(${row.id})`)
   ElMessage.success('删除成功')
 }
@@ -231,7 +231,7 @@ async function batchDelete() {
     confirmButtonText: '删除',
     cancelButtonText: '取消'
   })
-  wall.removeConfessions(selection.value.map((r) => r.id))
+  await wall.removeConfessions(selection.value.map((r) => r.id))
   audit.log('confession.delete', `批量删除 ${selection.value.length} 条表白`)
   selection.value = []
   ElMessage.success('批量删除成功')
@@ -242,7 +242,7 @@ function exportRows() {
     'lovewall-表白数据',
     ['ID', '收件人', '署名', '内容', '点赞数', '评论数', '状态', '置顶', '发布时间'],
     filtered.value.map((c) => [
-      c.id, c.to, c.from, c.content, c.likes.length, c.comments.length,
+      c.id, c.to, c.from, c.content, c.likeCount ?? c.likes?.length ?? 0, c.commentCount ?? c.comments?.length ?? 0,
       c.status === 'normal' ? '正常' : '已隐藏', c.pinned ? '是' : '否', formatDateTime(c.createdAt)
     ])
   )
@@ -259,7 +259,7 @@ function exportRows() {
   flex-wrap: wrap;
 }
 .search-input {
-  width: 260px;
+  width: min(260px, 100%);
 }
 .spacer {
   flex: 1;
@@ -277,6 +277,7 @@ function exportRows() {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+  flex-wrap: wrap;
 }
 .detail-item {
   margin-bottom: 10px;
@@ -308,5 +309,10 @@ function exportRows() {
 }
 .reply-inline {
   color: var(--hero-title);
+}
+@media (max-width: 768px) {
+  .pagination {
+    justify-content: center;
+  }
 }
 </style>

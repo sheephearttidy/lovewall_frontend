@@ -87,9 +87,9 @@ const router = createRouter({
   }
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  auth.init()
+  await auth.init()
 
   // 已登录用户访问登录/注册页 → 回首页
   if ((to.name === 'login' || to.name === 'register') && auth.isLoggedIn) {

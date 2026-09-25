@@ -3,14 +3,8 @@ import { useAuthStore } from './auth'
 import { getItem, setItem } from '@/utils/storage'
 
 const KEY = 'audit-logs'
-/** 审计日志保留上限 */
 const MAX_LOGS = 200
 
-/**
- * 管理员操作审计日志：
- * - 埋点方式：各管理页在执行管理操作成功后调用 log(action, detail)
- * - 记录内容：操作人、动作、对象摘要、时间、IP 位（Mock 阶段留空）
- */
 export const useAuditStore = defineStore('audit', {
   state: () => ({
     logs: [],
@@ -18,11 +12,9 @@ export const useAuditStore = defineStore('audit', {
   }),
 
   getters: {
-    /** 按时间倒序的全部日志 */
     all(state) {
       return state.logs.slice().sort((a, b) => b.createdAt - a.createdAt)
     },
-    /** 近 N 天操作次数（仪表盘趋势用） */
     recentCount(state) {
       const day = 24 * 60 * 60 * 1000
       const since = Date.now() - 7 * day
@@ -37,11 +29,6 @@ export const useAuditStore = defineStore('audit', {
       this.initialized = true
     },
 
-    /**
-     * 记录一条管理操作
-     * @param {string} action 动作标识，如 confession.hide / user.ban
-     * @param {string} detail 摘要文案（人可读）
-     */
     log(action, detail) {
       this.init()
       const auth = useAuthStore()

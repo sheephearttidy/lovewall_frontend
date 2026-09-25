@@ -34,6 +34,10 @@
           <el-input v-model="form.confirm" type="password" placeholder="确认密码" :prefix-icon="Lock" show-password />
         </el-form-item>
 
+        <el-form-item v-if="settings.inviteCodeEnabled" prop="inviteCode">
+          <el-input v-model="form.inviteCode" placeholder="邀请码（8 位）" :prefix-icon="Ticket" maxlength="8" />
+        </el-form-item>
+
         <el-form-item v-if="settings.captchaEnabled" prop="captcha">
           <div class="inline-row">
             <el-input v-model="form.captcha" placeholder="图形验证码" :prefix-icon="Key" maxlength="4" @keyup.enter="submit" />
@@ -58,17 +62,17 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElNotification } from 'element-plus'
-import { User, Lock, Avatar, Message, Key } from '@element-plus/icons-vue'
+import { User, Lock, Avatar, Message, Key, Ticket } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
-import { sendVerificationCode, verifyEmailCode } from '@/api/email'
+import * as authApi from '@/api/auth'
 import FloatingHearts from '@/components/FloatingHearts.vue'
 import ImageCaptcha from '@/components/ImageCaptcha.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
 const settings = useSettingsStore()
-settings.init()
+settings.init().catch(() => {})
 
 const formRef = ref()
 const captchaRef = ref()
@@ -83,6 +87,7 @@ const form = reactive({
   emailCode: '',
   password: '',
   confirm: '',
+  inviteCode: '',
   captcha: ''
 })
 
@@ -117,22 +122,34 @@ const rules = computed(() => {
   if (settings.captchaEnabled) {
     r.captcha = [{ required: true, message: '请输入图形验证码', trigger: 'blur' }]
   }
+  if (settings.inviteCodeEnabled) {
+    r.inviteCode = [{ required: true, message: '请输入邀请码', trigger: 'blur' }]
+  }
   return r
 })
 
-function sendCode() {
+async function sendCode() {
   if (!/^[\w.-]+@[\w-]+(\.[\w-]+)+$/.test(form.email.trim())) {
     ElMessage.warning('请先填写正确的邮箱地址')
     return
   }
   const email = form.email.trim()
-  const code = sendVerificationCode(email)
-  ElNotification({
-    title: '验证码已发送（演示模式）',
-    message: `验证码 ${code}，5 分钟内有效。正式环境将通过邮件发送至 ${email}`,
-    type: 'info',
-    duration: 10000
-  })
+  try {
+    const data = await authApi.sendEmailCode(email)
+    if (data.code) {
+      ElNotification({
+        title: '验证码已发送（开发模式）',
+        message: `验证码 ${data.code}，5 分钟内有效`,
+        type: 'info',
+        duration: 10000
+      })
+    } else {
+      ElMessage.success(`验证码已发送至 ${email}，5 分钟内有效`)
+    }
+  } catch (e) {
+    ElMessage.error(e.message || '发送验证码失败')
+    return
+  }
   cooldown.value = 60
   clearInterval(cooldownTimer)
   cooldownTimer = setInterval(() => {
@@ -148,16 +165,6 @@ async function submit() {
     return
   }
 
-  // 邮箱验证码校验
-  if (settings.emailVerificationEnabled) {
-    const res = verifyEmailCode(form.email.trim(), form.emailCode)
-    if (!res.ok) {
-      ElMessage.error(res.msg)
-      return
-    }
-  }
-
-  // 图形验证码校验
   if (settings.captchaEnabled) {
     if (!captchaRef.value.verify(form.captcha)) {
       ElMessage.error('图形验证码错误，请重试')
@@ -169,11 +176,15 @@ async function submit() {
 
   loading.value = true
   try {
-    const user = auth.register({
+    const user = await auth.register({
       username: form.username,
       password: form.password,
       nickname: form.nickname,
-      email: settings.emailVerificationEnabled ? form.email.trim() : ''
+      email: settings.emailVerificationEnabled ? form.email.trim() : '',
+      inviteCode: settings.inviteCodeEnabled ? form.inviteCode.trim() : '',
+      emailCode: settings.emailVerificationEnabled ? form.emailCode : '',
+      captchaId: settings.captchaEnabled ? (captchaRef.value?.captchaId || '') : '',
+      captchaText: settings.captchaEnabled ? form.captcha : ''
     })
     ElMessage.success(`注册成功，欢迎加入，${user.nickname}！`)
     router.push('/')
@@ -196,7 +207,7 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 16px;
   background: var(--hero-grad);
 }
 .auth-card {
@@ -206,7 +217,7 @@ async function submit() {
   max-width: 100%;
   background: var(--surface);
   border-radius: 18px;
-  padding: 38px 36px 28px;
+  padding: 36px 32px 28px;
   box-shadow: 0 16px 40px var(--card-shadow-hover);
   text-align: center;
 }
@@ -229,6 +240,8 @@ h2 {
   margin-top: 18px;
   font-size: 13px;
   color: var(--text-3);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .inline-row {
   display: flex;
@@ -238,5 +251,16 @@ h2 {
 }
 .side-btn {
   flex-shrink: 0;
+}
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 28px 20px 22px;
+    border-radius: 14px;
+  }
+  .extra {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 }
 </style>

@@ -74,7 +74,7 @@ async function submit() {
   }
   loading.value = true
   try {
-    const user = auth.login({ username: form.username, password: form.password })
+    const user = await auth.login({ username: form.username, password: form.password })
     ElMessage.success(`欢迎回来，${user.nickname}！`)
     const redirect = route.query.redirect
     if (redirect) {
@@ -97,7 +97,7 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 24px 16px;
   background: var(--hero-grad);
 }
 .auth-card {
@@ -107,7 +107,7 @@ async function submit() {
   max-width: 100%;
   background: var(--surface);
   border-radius: 18px;
-  padding: 38px 36px 28px;
+  padding: 36px 32px 28px;
   box-shadow: 0 16px 40px var(--card-shadow-hover);
   text-align: center;
 }
@@ -130,6 +130,8 @@ h2 {
   margin-top: 18px;
   font-size: 13px;
   color: var(--text-3);
+  flex-wrap: wrap;
+  gap: 8px;
 }
 .divider-text {
   font-size: 12px;
@@ -140,5 +142,16 @@ h2 {
   justify-content: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 28px 20px 22px;
+    border-radius: 14px;
+  }
+  .extra {
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
 }
 </style>

@@ -1,23 +1,10 @@
 import { defineStore } from 'pinia'
-import { getItem, setItem } from '@/utils/storage'
-import { genId } from '@/utils/format'
-import { seedConfessions } from '@/api/seed'
 import { useAuthStore } from './auth'
-import { useSettingsStore } from './settings'
 import { useNotificationStore } from './notification'
-import { filterSensitiveText } from '@/utils/sensitive'
-import { checkThrottle, markThrottle } from '@/utils/throttle'
+import * as wallApi from '@/api/wall'
 
-const KEY = 'confessions'
-
-/** 发布表白冷却：60 秒 / 条 */
-const POST_COOLDOWN = 60 * 1000
-/** 发表评论冷却：30 秒 / 条 */
-const COMMENT_COOLDOWN = 30 * 1000
-/** 置顶上限：3 条 */
 const MAX_PINNED = 3
 
-/** 置顶排序权重：置顶在前，同为置顶按置顶时间倒序 */
 function byPinnedFirst(a, b) {
   const pa = a.pinned ? 1 : 0
   const pb = b.pinned ? 1 : 0
@@ -26,316 +13,229 @@ function byPinnedFirst(a, b) {
   return b.createdAt - a.createdAt
 }
 
-/** 截断文本用于通知摘要 */
-function truncate(text, n) {
-  const t = String(text || '')
-  return t.length > n ? t.slice(0, n) + '…' : t
-}
-
 export const useWallStore = defineStore('wall', {
   state: () => ({
     confessions: [],
+    total: 0,
+    page: 1,
+    pageSize: 10,
     initialized: false
   }),
 
   getters: {
-    /** 前台可见（正常状态）的表白：置顶优先，其余按时间倒序 */
     visible(state) {
       return state.confessions
         .filter((c) => c.status === 'normal')
         .slice()
         .sort(byPinnedFirst)
     },
-    /** 当前置顶条数（后台管理用） */
     pinnedCount(state) {
       return state.confessions.filter((c) => c.pinned).length
     },
-    totalConfessions: (s) => s.confessions.length,
-    totalLikes: (s) => s.confessions.reduce((n, c) => n + (c.likes?.length || 0), 0),
-    totalComments: (s) => s.confessions.reduce((n, c) => n + (c.comments?.length || 0), 0),
-    /** 展平的全部评论（后台管理用） */
+    totalConfessions: (s) => s.total || s.confessions.length,
+    totalLikes: (s) => s.confessions.reduce((n, c) => n + (c.likeCount || c.likes?.length || 0), 0),
+    totalComments: (s) => s.confessions.reduce((n, c) => n + (c.commentCount || c.comments?.length || 0), 0),
     allComments(state) {
       const list = []
       state.confessions.forEach((c) => {
-        c.comments.forEach((cm) => {
+        (c.comments || []).forEach((cm) => {
           list.push({ ...cm, confessionContent: c.content, confessionTo: c.to })
         })
       })
       return list.sort((a, b) => b.createdAt - a.createdAt)
     },
-    /** 点赞 Top N（仪表盘用） */
     topLiked(state) {
       return state.confessions
         .slice()
-        .sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0))
+        .sort((a, b) => (b.likeCount || b.likes?.length || 0) - (a.likeCount || a.likes?.length || 0))
     }
   },
 
   actions: {
-    init() {
+    async init() {
       if (this.initialized) return
-      const data = getItem(KEY, null)
-      if (Array.isArray(data) && data.length) {
-        // 兼容旧数据：补充 pinned 字段（置顶功能上线前的存量表白）
-        this.confessions = data.map((c) => (c.pinned === undefined ? { ...c, pinned: false } : c))
-      } else {
-        this.confessions = seedConfessions()
-        this._persist()
-      }
+      await this.fetchConfessions()
       this.initialized = true
     },
 
-    _persist() {
-      setItem(KEY, this.confessions)
+    async fetchConfessions(params = {}) {
+      try {
+        const data = await wallApi.getConfessions({ page: this.page, pageSize: this.pageSize, ...params })
+        this.confessions = data.list || []
+        this.total = data.total || 0
+        this.page = data.page || 1
+        this.pageSize = data.pageSize || 10
+      } catch (e) {
+        console.warn('[wall] 获取表白列表失败:', e.message)
+      }
     },
 
-    /** 当前用户是否已点赞 */
     hasLiked(confession) {
       const auth = useAuthStore()
-      return !!auth.currentUser && confession.likes.includes(auth.currentUser.id)
+      if (!auth.currentUser) return false
+      if (confession.likedByMe !== undefined) return confession.likedByMe
+      return confession.likes?.includes(auth.currentUser.id) || false
     },
 
-    /**
-     * 发布表白（含敏感词过滤与频率限制）
-     * @returns {{ confession: object, filtered: number }}
-     */
-    addConfession({ to, content, from, color, images = [] }) {
+    async addConfession({ to, content, from, color, images = [] }) {
       const auth = useAuthStore()
       if (!auth.isLoggedIn) throw new Error('请先登录后再发布表白')
 
-      const throttle = checkThrottle(`post:${auth.currentUser.id}`, POST_COOLDOWN)
-      if (!throttle.ok) {
-        throw new Error(`发布太频繁啦，请 ${throttle.remainSec} 秒后再试`)
+      const payload = { to: (to || '').trim() || '所有人', content, from: from || '匿名', color, images }
+      const data = await wallApi.postConfession(payload)
+      if (data.confession) {
+        this.confessions.unshift(data.confession)
+        this.total += 1
       }
-
-      const settings = useSettingsStore()
-      settings.init()
-
-      let finalContent = (content || '').trim()
-      let filtered = 0
-      if (settings.sensitiveFilterEnabled) {
-        const r = filterSensitiveText(finalContent)
-        finalContent = r.clean
-        filtered = r.hitCount
-      }
-      if (!finalContent) throw new Error('表白内容不能为空')
-
-      const item = {
-        id: genId('c-'),
-        to: (to || '').trim() || '所有人',
-        content: finalContent,
-        from: from || '匿名',
-        authorId: auth.currentUser?.id || null,
-        color,
-        images,
-        likes: [],
-        comments: [],
-        createdAt: Date.now(),
-        status: 'normal',
-        pinned: false,
-        pinnedAt: null
-      }
-      this.confessions.unshift(item)
-      markThrottle(`post:${auth.currentUser.id}`)
-      this._persist()
-      return { confession: item, filtered }
+      return { confession: data.confession, filtered: data.filtered || 0 }
     },
 
-    /**
-     * 点赞 / 取消点赞（点赞时通知表白作者）
-     */
-    toggleLike(id) {
+    async toggleLike(id) {
       const auth = useAuthStore()
       if (!auth.isLoggedIn) throw new Error('请先登录后再点赞')
       const c = this.confessions.find((x) => x.id === id)
       if (!c) return false
-      const uid = auth.currentUser.id
-      const idx = c.likes.indexOf(uid)
-      if (idx >= 0) {
-        c.likes.splice(idx, 1)
-        this._persist()
-        return false
+
+      const isLiked = c.likedByMe !== undefined ? c.likedByMe : (c.likes?.includes(auth.currentUser.id) || false)
+
+      try {
+        let data
+        if (isLiked) {
+          data = await wallApi.unlikeConfession(id)
+        } else {
+          data = await wallApi.likeConfession(id)
+        }
+        c.likedByMe = data.liked
+        c.likeCount = data.likeCount
+        if (data.liked) {
+          const notify = useNotificationStore()
+          notify.pushLocal({
+            type: 'like',
+            toUserId: c.authorId,
+            fromUser: auth.currentUser,
+            confessionId: c.id,
+            text: `赞了你的表白`
+          })
+        }
+        return data.liked
+      } catch (e) {
+        throw new Error(e.message || '点赞操作失败')
       }
-      c.likes.push(uid)
-      this._persist()
-      // 通知表白作者
-      const notify = useNotificationStore()
-      notify.push({
-        type: 'like',
-        toUserId: c.authorId,
-        fromUser: auth.currentUser,
-        confessionId: c.id,
-        text: `赞了你的表白「${truncate(c.content, 20)}」`
-      })
-      return true
     },
 
-    /**
-     * 发表评论（支持楼中楼回复，含敏感词过滤与频率限制）
-     * @param {string} confessionId 表白 ID
-     * @param {string} content 评论内容
-     * @param {{ id: string, nickname: string } | null} replyTo 被回复的评论
-     * @returns {{ comment: object, filtered: number }}
-     */
-    addComment(confessionId, content, replyTo = null) {
+    async addComment(confessionId, content, replyTo = null) {
       const auth = useAuthStore()
       if (!auth.isLoggedIn) throw new Error('请先登录后再评论')
 
-      const throttle = checkThrottle(`comment:${auth.currentUser.id}`, COMMENT_COOLDOWN)
-      if (!throttle.ok) {
-        throw new Error(`评论太频繁，请 ${throttle.remainSec} 秒后再试`)
-      }
-
-      const c = this.confessions.find((x) => x.id === confessionId)
-      if (!c) throw new Error('表白不存在')
-
-      const settings = useSettingsStore()
-      settings.init()
-
-      let finalContent = (content || '').trim()
-      let filtered = 0
-      if (settings.sensitiveFilterEnabled) {
-        const r = filterSensitiveText(finalContent)
-        finalContent = r.clean
-        filtered = r.hitCount
-      }
-      if (!finalContent) throw new Error('评论内容不能为空')
-
-      const cm = {
-        id: genId('cm-'),
-        confessionId,
-        authorId: auth.currentUser.id,
-        nickname: auth.currentUser.nickname,
-        content: finalContent,
-        replyTo: replyTo?.id || null,
-        replyToNickname: replyTo?.nickname || '',
-        createdAt: Date.now(),
-        status: 'normal'
-      }
-      c.comments.push(cm)
-      markThrottle(`comment:${auth.currentUser.id}`)
-      this._persist()
-
-      // 通知：表白作者 + 被回复评论的作者（同人只发一条，自己给自己的不发）
-      const notify = useNotificationStore()
-      const receivers = new Set()
+      const payload = { content }
       if (replyTo) {
-        const target = c.comments.find((x) => x.id === replyTo.id)
-        if (target?.authorId && target.authorId !== auth.currentUser.id) {
-          receivers.add(target.authorId)
-          notify.push({
-            type: 'reply',
-            toUserId: target.authorId,
-            fromUser: auth.currentUser,
-            confessionId: c.id,
-            text: `回复了你的评论「${truncate(target.content, 15)}」：${truncate(cm.content, 15)}`
-          })
-        }
-      }
-      if (c.authorId && !receivers.has(c.authorId) && c.authorId !== auth.currentUser.id) {
-        notify.push({
-          type: 'comment',
-          toUserId: c.authorId,
-          fromUser: auth.currentUser,
-          confessionId: c.id,
-          text: `评论了你的表白「${truncate(c.content, 15)}」：${truncate(cm.content, 15)}`
-        })
+        payload.replyTo = { id: replyTo.id, nickname: replyTo.nickname }
       }
 
-      return { comment: cm, filtered }
+      const data = await wallApi.addComment(confessionId, payload)
+      const c = this.confessions.find((x) => x.id === confessionId)
+      if (c && data.comment) {
+        if (!c.comments) c.comments = []
+        c.comments.push(data.comment)
+        c.commentCount = (c.commentCount || 0) + 1
+      }
+      return { comment: data.comment, filtered: data.filtered || 0 }
     },
 
-    removeComment(commentId) {
+    async removeComment(commentId) {
+      const { deleteAdminComment } = await import('@/api/admin')
+      await deleteAdminComment(commentId)
       this.confessions.forEach((c) => {
-        const idx = c.comments.findIndex((cm) => cm.id === commentId)
-        if (idx >= 0) c.comments.splice(idx, 1)
+        if (c.comments) {
+          const idx = c.comments.findIndex((cm) => cm.id === commentId)
+          if (idx >= 0) {
+            c.comments.splice(idx, 1)
+            c.commentCount = Math.max(0, (c.commentCount || 1) - 1)
+          }
+        }
       })
-      this._persist()
     },
 
-    removeComments(ids) {
+    async removeComments(ids) {
+      const { batchDeleteComments } = await import('@/api/admin')
+      await batchDeleteComments(ids)
       const set = new Set(ids)
       this.confessions.forEach((c) => {
-        c.comments = c.comments.filter((cm) => !set.has(cm.id))
+        if (c.comments) {
+          const before = c.comments.length
+          c.comments = c.comments.filter((cm) => !set.has(cm.id))
+          c.commentCount = Math.max(0, (c.commentCount || before) - (before - c.comments.length))
+        }
       })
-      this._persist()
     },
 
-    /* ================= 管理员操作 ================= */
-
-    /**
-     * 用户删除自己发布的表白（仅作者本人）
-     */
-    deleteOwnConfession(id) {
+    async deleteOwnConfession(id) {
       const auth = useAuthStore()
       if (!auth.isLoggedIn) throw new Error('请先登录')
       const c = this.confessions.find((x) => x.id === id)
       if (!c) throw new Error('表白不存在')
       if (c.authorId !== auth.currentUser.id) throw new Error('只能删除自己发布的表白')
+      await wallApi.deleteConfession(id)
       this.confessions = this.confessions.filter((x) => x.id !== id)
-      this._persist()
+      this.total = Math.max(0, this.total - 1)
     },
 
-    setConfessionStatus(id, status) {
+    async setConfessionStatus(id, status) {
+      const { setConfessionStatus: apiSetStatus } = await import('@/api/admin')
+      await apiSetStatus(id, status)
       const c = this.confessions.find((x) => x.id === id)
-      if (c) {
-        c.status = status
-        this._persist()
-      }
+      if (c) c.status = status
     },
 
-    /**
-     * 置顶 / 取消置顶（管理员操作，置顶上限 MAX_PINNED 条）
-     * @returns {boolean} 操作后的置顶状态
-     */
-    togglePinned(id) {
+    async togglePinned(id) {
       const c = this.confessions.find((x) => x.id === id)
       if (!c) throw new Error('表白不存在')
       if (c.pinned) {
+        const { setConfessionStatus: apiSetStatus } = await import('@/api/admin')
+        await apiSetStatus(id, { pinned: false })
         c.pinned = false
         c.pinnedAt = null
-        this._persist()
         return false
       }
       const count = this.confessions.filter((x) => x.pinned).length
       if (count >= MAX_PINNED) {
         throw new Error(`最多只能置顶 ${MAX_PINNED} 条表白，请先取消其他置顶`)
       }
+      const { setConfessionStatus: apiSetStatus } = await import('@/api/admin')
+      await apiSetStatus(id, { pinned: true })
       c.pinned = true
       c.pinnedAt = Date.now()
-      this._persist()
       return true
     },
 
-    removeConfession(id) {
+    async removeConfession(id) {
+      const { deleteAdminConfession } = await import('@/api/admin')
+      await deleteAdminConfession(id)
       this.confessions = this.confessions.filter((c) => c.id !== id)
-      this._persist()
+      this.total = Math.max(0, this.total - 1)
     },
 
-    removeConfessions(ids) {
+    async removeConfessions(ids) {
+      const { batchDeleteConfessions } = await import('@/api/admin')
+      await batchDeleteConfessions(ids)
       const set = new Set(ids)
       this.confessions = this.confessions.filter((c) => !set.has(c.id))
-      this._persist()
+      this.total = Math.max(0, this.total - ids.length)
     },
 
-    /**
-     * 用户修改昵称后，同步其历史表白署名与评论昵称
-     */
     syncAuthorNickname(userId, oldNickname, newNickname) {
-      let changed = false
       this.confessions.forEach((c) => {
         if (c.authorId === userId && c.from === oldNickname) {
           c.from = newNickname
-          changed = true
         }
-        c.comments.forEach((cm) => {
-          if (cm.authorId === userId && cm.nickname !== newNickname) {
-            cm.nickname = newNickname
-            changed = true
-          }
-        })
+        if (c.comments) {
+          c.comments.forEach((cm) => {
+            if (cm.authorId === userId && cm.nickname !== newNickname) {
+              cm.nickname = newNickname
+            }
+          })
+        }
       })
-      if (changed) this._persist()
     }
   }
 })

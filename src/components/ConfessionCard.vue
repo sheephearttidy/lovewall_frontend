@@ -33,7 +33,7 @@
     <div class="card-actions">
       <div class="action like-btn" :class="{ active: liked }" @click="onLike">
         <span class="heart-icon" :class="{ 'heart-pop': animating }">❤</span>
-        <span>{{ confession.likes.length }}</span>
+        <span>{{ confession.likeCount ?? confession.likes?.length ?? 0 }}</span>
         <span
           v-for="p in particles"
           :key="p.id"
@@ -43,7 +43,7 @@
       </div>
       <div class="action" :class="{ active: showComments }" @click="showComments = !showComments">
         <span>💬</span>
-        <span>{{ confession.comments.length }}</span>
+        <span>{{ confession.commentCount ?? confession.comments?.length ?? 0 }}</span>
       </div>
       <div class="action" title="分享" @click="$emit('share', confession)">
         <span>🔗</span>
@@ -90,9 +90,9 @@ const cardStyle = computed(() => {
   }
 })
 
-function onLike() {
+async function onLike() {
   try {
-    const nowLiked = wall.toggleLike(props.confession.id)
+    const nowLiked = await wall.toggleLike(props.confession.id)
     if (nowLiked) {
       animating.value = true
       setTimeout(() => (animating.value = false), 420)
@@ -273,5 +273,17 @@ function spawnParticles() {
   bottom: 100%;
   pointer-events: none;
   animation: particle-up ease-out forwards;
+}
+@media (max-width: 480px) {
+  .card-images.n-2,
+  .card-images.n-3 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .card-images.n-1 .card-img {
+    height: 140px;
+  }
+  .card-img {
+    height: 80px;
+  }
 }
 </style>

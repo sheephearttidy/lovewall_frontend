@@ -127,7 +127,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const wall = useWallStore()
-wall.init()
+wall.init().catch(() => {})
 
 const keyword = ref('')
 const sortBy = ref('latest')
@@ -162,7 +162,7 @@ const filtered = computed(() => {
       const pa = a.pinned ? 1 : 0
       const pb = b.pinned ? 1 : 0
       if (pa !== pb) return pb - pa
-      return b.likes.length - a.likes.length || b.createdAt - a.createdAt
+      return (b.likeCount || b.likes?.length || 0) - (a.likeCount || a.likes?.length || 0) || b.createdAt - a.createdAt
     })
   }
   return list
@@ -182,8 +182,8 @@ function goLogin() {
   router.push('/login')
 }
 
-function logout() {
-  auth.logout()
+async function logout() {
+  await auth.logout()
   ElMessage.success('已退出登录')
 }
 
@@ -233,19 +233,21 @@ watch(
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 28px;
+  padding: 10px 16px;
   background: var(--overlay);
   backdrop-filter: blur(10px);
 }
 .brand {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   color: var(--love-pink);
+  white-space: nowrap;
 }
 .right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 .user-chip {
   display: flex;
@@ -270,14 +272,14 @@ watch(
 /* Hero */
 .hero {
   position: relative;
-  padding: 72px 20px 56px;
+  padding: 56px 16px 40px;
   background: var(--hero-grad);
   text-align: center;
   z-index: 1;
 }
 .hero-inner h1 {
   margin: 0 0 14px;
-  font-size: 42px;
+  font-size: 36px;
   line-height: 1.35;
   color: var(--hero-title);
   letter-spacing: 2px;
@@ -285,7 +287,7 @@ watch(
 .slogan {
   margin: 0 0 26px;
   color: var(--hero-sub);
-  font-size: 15px;
+  font-size: 14px;
   letter-spacing: 1px;
 }
 .hero-actions {
@@ -300,8 +302,8 @@ watch(
 .hero-stats {
   display: flex;
   justify-content: center;
-  gap: 48px;
-  margin-top: 36px;
+  gap: 32px;
+  margin-top: 32px;
 }
 .stat {
   display: flex;
@@ -309,7 +311,7 @@ watch(
   gap: 4px;
 }
 .stat b {
-  font-size: 26px;
+  font-size: 24px;
   color: var(--hero-stat);
 }
 .stat span {
@@ -324,17 +326,18 @@ watch(
   flex: 1;
   width: min(1200px, 94%);
   margin: 0 auto;
-  padding: 34px 0 80px;
+  padding: 24px 0 80px;
 }
 .toolbar {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
-  margin-bottom: 26px;
+  gap: 12px;
+  margin-bottom: 20px;
 }
 .search-input {
-  width: 320px;
+  width: min(320px, 100%);
+  flex-shrink: 1;
 }
 .color-chips {
   display: flex;
@@ -372,8 +375,8 @@ watch(
 
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 18px;
 }
 
 /* 移动端悬浮按钮 */
@@ -404,14 +407,55 @@ watch(
 }
 
 @media (max-width: 768px) {
+  .topbar {
+    padding: 8px 12px;
+  }
+  .brand {
+    font-size: 16px;
+  }
+  .hero {
+    padding: 36px 12px 28px;
+  }
   .hero-inner h1 {
-    font-size: 30px;
+    font-size: 26px;
+    letter-spacing: 1px;
+  }
+  .slogan {
+    font-size: 13px;
+  }
+  .hero-stats {
+    gap: 20px;
+    margin-top: 24px;
+  }
+  .stat b {
+    font-size: 20px;
+  }
+  .wall-section {
+    width: 100%;
+    padding: 16px 0 80px;
   }
   .search-input {
     width: 100%;
   }
+  .card-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
   .fab {
     display: block;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-inner h1 {
+    font-size: 22px;
+  }
+  .hero-stats {
+    gap: 14px;
+  }
+  .chip {
+    padding: 4px 10px;
+    font-size: 12px;
   }
 }
 </style>

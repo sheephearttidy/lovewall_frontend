@@ -1,20 +1,10 @@
 import { defineStore } from 'pinia'
-import { getItem, setItem, removeItem } from '@/utils/storage'
-import { genId } from '@/utils/format'
-import { seedUsers } from '@/api/seed'
-import { avatarColorOf, AVATAR_COLORS } from '@/constants/colors'
+import { getItem, setItem } from '@/utils/storage'
+import { AVATAR_COLORS } from '@/constants/colors'
+import * as authApi from '@/api/auth'
+import { getToken, clearToken } from '@/api/http'
 
 const USERS_KEY = 'users'
-const SESSION_KEY = 'session'
-
-/**
- * Mock 密码哈希（仅用于前端演示，请勿用于生产环境）
- */
-export function hashPassword(pwd) {
-  let h = 5381
-  for (let i = 0; i < pwd.length; i++) h = ((h << 5) + h + pwd.charCodeAt(i)) | 0
-  return 'mw' + (h >>> 0).toString(36)
-}
 
 const EMAIL_RE = /^[\w.-]+@[\w-]+(\.[\w-]+)+$/
 
@@ -32,17 +22,25 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    init() {
+    async init() {
       if (this.initialized) return
-      const data = getItem(USERS_KEY, null)
-      if (Array.isArray(data) && data.length) {
-        this.users = data
-      } else {
-        this.users = seedUsers()
-        this._persistUsers()
+      const token = getToken()
+      if (token) {
+        try {
+          const data = await authApi.getSession()
+          if (data?.isLoggedIn && data?.user) {
+            this.currentUser = data.user
+          } else {
+            this.currentUser = null
+            clearToken()
+          }
+        } catch (e) {
+          console.warn('[auth] 会话验证失败:', e.message)
+          this.currentUser = null
+          clearToken()
+        }
       }
-      const uid = getItem(SESSION_KEY, null)
-      this.currentUser = this.users.find((u) => u.id === uid) || null
+      this.users = getItem(USERS_KEY, [])
       this.initialized = true
     },
 
@@ -50,11 +48,7 @@ export const useAuthStore = defineStore('auth', {
       setItem(USERS_KEY, this.users)
     },
 
-    /**
-     * 注册（成功后自动登录）
-     */
-    register({ username, password, nickname, email = '' }) {
-      this.init()
+    async register({ username, password, nickname, email = '', inviteCode = '', captchaId = '', captchaText = '', emailCode = '' }) {
       const uname = (username || '').trim()
       if (!/^[a-zA-Z0-9_]{3,20}$/.test(uname)) {
         throw new Error('用户名需为 3-20 位字母、数字或下划线')
@@ -62,164 +56,115 @@ export const useAuthStore = defineStore('auth', {
       if ((password || '').length < 6) {
         throw new Error('密码长度不能少于 6 位')
       }
-      if (this.users.some((u) => u.username === uname)) {
-        throw new Error('用户名已被注册')
+      const { useSettingsStore } = await import('./settings')
+      const settings = useSettingsStore()
+      await settings.init()
+      if (settings.inviteCodeEnabled) {
+        const code = (inviteCode || '').trim().toUpperCase()
+        if (!code) throw new Error('请输入邀请码')
+        if (!settings.validateInviteCode(code)) throw new Error('邀请码无效或已被使用')
       }
       const mail = (email || '').trim()
-      if (mail) {
-        if (!EMAIL_RE.test(mail)) throw new Error('邮箱格式不正确')
-        if (this.users.some((u) => u.email === mail)) throw new Error('该邮箱已被注册')
+      if (mail && !EMAIL_RE.test(mail)) throw new Error('邮箱格式不正确')
+
+      const payload = { username: uname, password, nickname: nickname || uname, email: mail }
+      if (captchaId) payload.captchaId = captchaId
+      if (captchaText) payload.captchaText = captchaText
+      if (emailCode) payload.emailCode = emailCode
+
+      const data = await authApi.register(payload)
+      this.currentUser = data.user
+      if (settings.inviteCodeEnabled) {
+        settings.useInviteCode(inviteCode.trim(), data.user.id)
       }
-      const user = {
-        id: genId('u-'),
-        username: uname,
-        nickname: (nickname || '').trim() || uname,
-        password: hashPassword(password),
-        role: 'user',
-        avatarColor: avatarColorOf(nickname || uname),
-        email: mail,
-        createdAt: Date.now(),
-        status: 'active'
-      }
-      this.users.push(user)
-      this._persistUsers()
-      this.currentUser = user
-      setItem(SESSION_KEY, user.id)
-      return user
+      return data.user
     },
 
-    /**
-     * 登录
-     */
-    login({ username, password }) {
-      this.init()
-      const user = this.users.find((u) => u.username === (username || '').trim())
-      if (!user || user.password !== hashPassword(password)) {
-        throw new Error('用户名或密码错误')
-      }
-      if (user.status === 'banned') {
-        throw new Error('该账号已被封禁，请联系管理员')
-      }
-      this.currentUser = user
-      setItem(SESSION_KEY, user.id)
-      return user
+    async login({ username, password }) {
+      const data = await authApi.login({ username, password })
+      this.currentUser = data.user
+      return data.user
     },
 
-    logout() {
+    async logout() {
+      try {
+        await authApi.logout()
+      } catch {
+        clearToken()
+      }
       this.currentUser = null
-      removeItem(SESSION_KEY)
     },
 
-    /**
-     * 更新个人资料（昵称 / 头像颜色）
-     */
-    updateProfile({ nickname, avatarColor }) {
+    async updateProfile({ nickname, avatarColor }) {
       if (!this.currentUser) throw new Error('请先登录')
-      const user = this.users.find((u) => u.id === this.currentUser.id)
-      if (!user) throw new Error('用户不存在')
       const nick = (nickname || '').trim()
       if (!nick) throw new Error('昵称不能为空')
       if (nick.length > 20) throw new Error('昵称长度不能超过 20 位')
-      const oldNickname = user.nickname
-      user.nickname = nick
+      const payload = { nickname: nick }
       if (avatarColor && AVATAR_COLORS.includes(avatarColor)) {
-        user.avatarColor = avatarColor
+        payload.avatarColor = avatarColor
       }
-      this.currentUser = { ...user }
-      this._persistUsers()
-      return { user, oldNickname }
+      const data = await (await import('@/api/user')).updateMe(payload)
+      const oldNickname = this.currentUser.nickname
+      this.currentUser = data.user
+      return { user: data.user, oldNickname }
     },
 
-    /**
-     * 修改密码
-     */
-    changePassword({ oldPassword, newPassword }) {
+    async changePassword({ oldPassword, newPassword }) {
       if (!this.currentUser) throw new Error('请先登录')
-      const user = this.users.find((u) => u.id === this.currentUser.id)
-      if (!user) throw new Error('用户不存在')
-      if (user.password !== hashPassword(oldPassword)) throw new Error('原密码错误')
       if ((newPassword || '').length < 6) throw new Error('新密码长度不能少于 6 位')
-      user.password = hashPassword(newPassword)
-      this._persistUsers()
+      await (await import('@/api/user')).changePassword({ oldPassword, newPassword })
     },
 
-    /**
-     * 忘记密码 - 校验用户名与邮箱是否匹配（返回脱敏用户信息）
-     */
-    findUserForReset(username, email) {
-      this.init()
+    async findUserForReset(username, email) {
       const uname = (username || '').trim()
       const mail = (email || '').trim()
       if (!uname || !mail) throw new Error('请填写用户名和邮箱')
-      const user = this.users.find((u) => u.username === uname && u.email === mail)
-      if (!user) throw new Error('用户名与邮箱不匹配')
-      if (user.status === 'banned') throw new Error('该账号已被封禁，无法重置密码')
-      return { id: user.id, username: user.username, nickname: user.nickname, email: user.email }
+      const data = await authApi.forgotVerify({ username: uname, email: mail })
+      return data
     },
 
-    /**
-     * 忘记密码 - 设置新密码
-     */
-    setPasswordByReset(userId, newPassword) {
-      this.init()
-      const user = this.users.find((u) => u.id === userId)
-      if (!user) throw new Error('用户不存在')
+    async setPasswordByReset(userId, resetToken, newPassword, emailCode) {
       if ((newPassword || '').length < 6) throw new Error('密码长度不能少于 6 位')
-      user.password = hashPassword(newPassword)
-      this._persistUsers()
+      await authApi.forgotReset({ userId, resetToken, newPassword, emailCode })
     },
 
-    /* ================= 管理员操作 ================= */
+    async createUser({ username, password, nickname, role = 'user', email = '' }) {
+      const { createAdminUser } = await import('@/api/admin')
+      const data = await createAdminUser({ username, password, nickname, role, email })
+      this.users.push(data.user)
+      this._persistUsers()
+      return data.user
+    },
 
-    createUser({ username, password, nickname, role = 'user', email = '' }) {
-      this.init()
-      const uname = (username || '').trim()
-      if (!/^[a-zA-Z0-9_]{3,20}$/.test(uname)) throw new Error('用户名需为 3-20 位字母、数字或下划线')
-      if ((password || '').length < 6) throw new Error('密码长度不能少于 6 位')
-      if (this.users.some((u) => u.username === uname)) throw new Error('用户名已存在')
-      const mail = (email || '').trim()
-      if (mail) {
-        if (!EMAIL_RE.test(mail)) throw new Error('邮箱格式不正确')
-        if (this.users.some((u) => u.email === mail)) throw new Error('该邮箱已被使用')
+    async setBanned(id, banned) {
+      const { updateAdminUser } = await import('@/api/admin')
+      await updateAdminUser(id, { banned })
+      const user = this.users.find((u) => u.id === id)
+      if (user) {
+        user.status = banned ? 'banned' : 'active'
+        this._persistUsers()
       }
-      const user = {
-        id: genId('u-'),
-        username: uname,
-        nickname: (nickname || '').trim() || uname,
-        password: hashPassword(password),
-        role: role === 'admin' ? 'admin' : 'user',
-        avatarColor: avatarColorOf(nickname || uname),
-        email: mail,
-        createdAt: Date.now(),
-        status: 'active'
+    },
+
+    async setRole(id, role) {
+      const { updateAdminUser } = await import('@/api/admin')
+      await updateAdminUser(id, { role })
+      const user = this.users.find((u) => u.id === id)
+      if (user) {
+        user.role = role
+        this._persistUsers()
       }
-      this.users.push(user)
-      this._persistUsers()
-      return user
     },
 
-    setBanned(id, banned) {
-      const user = this.users.find((u) => u.id === id)
-      if (!user) throw new Error('用户不存在')
-      user.status = banned ? 'banned' : 'active'
-      this._persistUsers()
+    async resetPassword(id) {
+      const { updateAdminUser } = await import('@/api/admin')
+      await updateAdminUser(id, { action: 'resetPassword' })
     },
 
-    setRole(id, role) {
-      const user = this.users.find((u) => u.id === id)
-      if (!user) throw new Error('用户不存在')
-      user.role = role
-      this._persistUsers()
-    },
-
-    resetPassword(id) {
-      const user = this.users.find((u) => u.id === id)
-      if (!user) throw new Error('用户不存在')
-      user.password = hashPassword('123456')
-      this._persistUsers()
-    },
-
-    deleteUser(id) {
+    async deleteUser(id) {
+      const { deleteAdminUser } = await import('@/api/admin')
+      await deleteAdminUser(id)
       const idx = this.users.findIndex((u) => u.id === id)
       if (idx >= 0) {
         this.users.splice(idx, 1)

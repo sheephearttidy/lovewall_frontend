@@ -69,7 +69,7 @@ import { exportCsv } from '@/utils/csv'
 
 const wall = useWallStore()
 const audit = useAuditStore()
-wall.init()
+wall.init().catch(() => {})
 
 const keyword = ref('')
 const selection = ref([])
@@ -95,7 +95,7 @@ async function removeOne(row) {
     confirmButtonText: '删除',
     cancelButtonText: '取消'
   })
-  wall.removeComment(row.id)
+  await wall.removeComment(row.id)
   audit.log('comment.delete', `删除评论「${row.content.slice(0, 20)}…」(${row.id})`)
   ElMessage.success('删除成功')
 }
@@ -106,7 +106,7 @@ async function batchDelete() {
     confirmButtonText: '删除',
     cancelButtonText: '取消'
   })
-  wall.removeComments(selection.value.map((r) => r.id))
+  await wall.removeComments(selection.value.map((r) => r.id))
   audit.log('comment.delete', `批量删除 ${selection.value.length} 条评论`)
   selection.value = []
   ElMessage.success('批量删除成功')
@@ -133,7 +133,7 @@ function exportRows() {
   flex-wrap: wrap;
 }
 .search-input {
-  width: 260px;
+  width: min(260px, 100%);
 }
 .spacer {
   flex: 1;
@@ -150,5 +150,11 @@ function exportRows() {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .pagination {
+    justify-content: center;
+  }
 }
 </style>

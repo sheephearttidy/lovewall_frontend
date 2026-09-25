@@ -1,59 +1,55 @@
 import { defineStore } from 'pinia'
-import { getItem, setItem } from '@/utils/storage'
-import { genId } from '@/utils/format'
 import { useAuthStore } from './auth'
+import * as notifyApi from '@/api/notification'
 
-const KEY = 'notifications'
-/** 最多保留的通知条数 */
-const MAX_NOTIFICATIONS = 50
-
-/**
- * 消息通知
- * type: 'like'（点赞我的表白）| 'comment'（评论我的表白）| 'reply'（回复我的评论）
- */
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
     notifications: [],
+    unreadCount: 0,
+    total: 0,
+    page: 1,
+    pageSize: 20,
     initialized: false
   }),
 
   getters: {
-    /** 当前用户的未读数量 */
-    unreadCount(state) {
-      const auth = useAuthStore()
-      if (!auth.currentUser) return 0
-      return state.notifications.filter((n) => n.toUserId === auth.currentUser.id && !n.read).length
-    },
-    /** 当前用户的通知列表（倒序） */
     myNotifications(state) {
-      const auth = useAuthStore()
-      if (!auth.currentUser) return []
       return state.notifications
-        .filter((n) => n.toUserId === auth.currentUser.id)
-        .sort((a, b) => b.createdAt - a.createdAt)
     }
   },
 
   actions: {
-    init() {
+    async init() {
       if (this.initialized) return
-      const data = getItem(KEY, null)
-      if (Array.isArray(data)) this.notifications = data
+      await this.fetchNotifications()
       this.initialized = true
     },
 
-    _persist() {
-      setItem(KEY, this.notifications)
+    async fetchNotifications(params = {}) {
+      const auth = useAuthStore()
+      if (!auth.isLoggedIn) {
+        this.notifications = []
+        this.unreadCount = 0
+        return
+      }
+      try {
+        const data = await notifyApi.getNotifications({ page: this.page, pageSize: this.pageSize, ...params })
+        this.notifications = data.list || []
+        this.total = data.total || 0
+        this.unreadCount = data.unreadCount || 0
+        this.page = data.page || 1
+      } catch (e) {
+        console.warn('[notification] 获取通知失败:', e.message)
+        this.notifications = []
+        this.unreadCount = 0
+      }
     },
 
-    /**
-     * 推送通知（自己给自己的操作不发通知）
-     */
-    push({ type, toUserId, fromUser, confessionId, text }) {
-      this.init()
+    pushLocal({ type, toUserId, fromUser, confessionId, text }) {
       if (!toUserId || !fromUser || toUserId === fromUser.id) return
+      this.unreadCount += 1
       this.notifications.unshift({
-        id: genId('n-'),
+        id: 'local-' + Date.now(),
         type,
         toUserId,
         fromUserId: fromUser.id,
@@ -63,32 +59,40 @@ export const useNotificationStore = defineStore('notification', {
         read: false,
         createdAt: Date.now()
       })
-      if (this.notifications.length > MAX_NOTIFICATIONS) {
-        this.notifications = this.notifications.slice(0, MAX_NOTIFICATIONS)
+    },
+
+    async markRead(id) {
+      try {
+        await notifyApi.markRead(id)
+        const n = this.notifications.find((x) => x.id === id)
+        if (n && !n.read) {
+          n.read = true
+          this.unreadCount = Math.max(0, this.unreadCount - 1)
+        }
+      } catch (e) {
+        console.warn('[notification] 标记已读失败:', e.message)
       }
-      this._persist()
     },
 
-    markRead(id) {
-      const n = this.notifications.find((x) => x.id === id)
-      if (n) {
-        n.read = true
-        this._persist()
+    async markAllRead() {
+      try {
+        await notifyApi.markAllRead()
+        this.notifications.forEach((n) => { n.read = true })
+        this.unreadCount = 0
+      } catch (e) {
+        console.warn('[notification] 全部标记已读失败:', e.message)
       }
     },
 
-    markAllRead() {
-      const auth = useAuthStore()
-      this.notifications.forEach((n) => {
-        if (n.toUserId === auth.currentUser?.id) n.read = true
-      })
-      this._persist()
-    },
-
-    clearAll() {
-      const auth = useAuthStore()
-      this.notifications = this.notifications.filter((n) => n.toUserId !== auth.currentUser?.id)
-      this._persist()
+    async clearAll() {
+      try {
+        await notifyApi.clearNotifications()
+        this.notifications = []
+        this.unreadCount = 0
+        this.total = 0
+      } catch (e) {
+        console.warn('[notification] 清空通知失败:', e.message)
+      }
     }
   }
 })

@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     title="分享这条表白"
-    width="480px"
+    width="min(480px, 92vw)"
     append-to-body
     destroy-on-close
     align-center

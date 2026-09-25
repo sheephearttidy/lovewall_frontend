@@ -1,7 +1,10 @@
 <template>
   <el-container class="admin-layout">
+    <!-- 移动端遮罩 -->
+    <div v-if="mobileMenuOpen" class="mobile-overlay" @click="mobileMenuOpen = false"></div>
+
     <!-- 侧边栏 -->
-    <el-aside :width="collapsed ? '64px' : '220px'" class="admin-aside" :class="{ collapsed }">
+    <el-aside :width="collapsed ? '64px' : '220px'" class="admin-aside" :class="{ collapsed, 'mobile-open': mobileMenuOpen }">
       <div class="logo">
         <span class="logo-icon">💌</span>
         <transition name="fade">
@@ -59,7 +62,7 @@
       <!-- 顶栏 -->
       <el-header class="admin-header" height="56px">
         <div class="header-left">
-          <button class="collapse-btn" :title="collapsed ? '展开菜单' : '收起菜单'" @click="collapsed = !collapsed">
+          <button class="collapse-btn" :title="collapsed ? '展开菜单' : '收起菜单'" @click="toggleMenu">
             <el-icon :size="18"><Expand v-if="collapsed" /><Fold v-else /></el-icon>
           </button>
           <el-breadcrumb separator="/">
@@ -105,7 +108,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useAuthStore } from '@/stores/auth'
@@ -115,10 +118,21 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const collapsed = ref(false)
+const mobileMenuOpen = ref(false)
 
-function onCommand(cmd) {
+const isMobile = computed(() => window.innerWidth <= 768)
+
+function toggleMenu() {
+  if (isMobile.value) {
+    mobileMenuOpen.value = !mobileMenuOpen.value
+  } else {
+    collapsed.value = !collapsed.value
+  }
+}
+
+async function onCommand(cmd) {
   if (cmd === 'logout') {
-    auth.logout()
+    await auth.logout()
     ElMessage.success('已退出登录')
     router.push('/login')
   } else if (cmd === 'front') {
@@ -287,17 +301,44 @@ html.dark .admin-aside {
   font-size: 13px;
   color: var(--text-3);
 }
+.mobile-overlay {
+  display: none;
+}
 @media (max-width: 768px) {
   .hide-sm {
     display: none;
+  }
+  .mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 19;
   }
   .admin-aside {
     position: fixed;
     z-index: 20;
     height: 100%;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+  }
+  .admin-aside.mobile-open {
+    transform: translateX(0);
+  }
+  .admin-header {
+    padding: 0 12px;
   }
   .admin-main {
-    padding: 14px;
+    padding: 14px 12px;
+  }
+  .page-title {
+    font-size: 17px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-main {
+    padding: 10px 8px;
   }
 }
 </style>

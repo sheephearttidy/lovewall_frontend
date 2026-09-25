@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     title="✍️ 写下你的表白"
-    width="540px"
+    width="min(540px, 92vw)"
     :close-on-click-modal="false"
     destroy-on-close
     append-to-body
@@ -156,7 +156,7 @@ async function submit() {
   }
   submitting.value = true
   try {
-    const { filtered } = wall.addConfession({
+    const { filtered } = await wall.addConfession({
       to: form.to,
       content: form.content,
       from: signature.value,

@@ -163,3 +163,22 @@ a {
 html.dark .floating-hearts .fh {
   opacity: 0.45;
 }
+
+/* 全局响应式：Element Plus 表格在窄屏横向滚动 */
+@media (max-width: 768px) {
+  .el-table {
+    font-size: 12px;
+  }
+  .el-dialog {
+    margin: 8vh auto !important;
+  }
+  .el-card__body {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .el-card__body {
+    padding: 12px;
+  }
+}

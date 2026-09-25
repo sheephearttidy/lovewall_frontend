@@ -171,9 +171,9 @@ const wall = useWallStore()
 const auth = useAuthStore()
 const settings = useSettingsStore()
 const router = useRouter()
-wall.init()
-auth.init()
-settings.init()
+wall.init().catch(() => {})
+auth.init().catch(() => {})
+settings.init().catch(() => {})
 
 const DAY = 24 * 60 * 60 * 1000
 
@@ -566,5 +566,38 @@ function barWidth(c) {
   font-size: 12px;
   color: var(--text-4);
   margin-top: 2px;
+}
+@media (max-width: 768px) {
+  .quick-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .bar-name {
+    width: 80px;
+  }
+  .color-label {
+    width: 60px;
+  }
+  .trend-svg {
+    height: 160px;
+  }
+}
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 14px 16px;
+  }
+  .num {
+    font-size: 22px;
+  }
+  .quick-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .quick-btn {
+    padding: 12px 6px;
+  }
+  .bar-name {
+    width: 60px;
+    font-size: 12px;
+  }
 }
 </style>

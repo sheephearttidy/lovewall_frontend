@@ -130,7 +130,7 @@ import FloatingHearts from '@/components/FloatingHearts.vue'
 const router = useRouter()
 const auth = useAuthStore()
 const wall = useWallStore()
-wall.init()
+wall.init().catch(() => {})
 
 const savingProfile = ref(false)
 const savingPwd = ref(false)
@@ -162,11 +162,10 @@ const pwdRules = {
   ]
 }
 
-function saveProfile() {
+async function saveProfile() {
   savingProfile.value = true
   try {
-    const { user, oldNickname } = auth.updateProfile({ ...profileForm })
-    // 同步历史表白署名与评论昵称
+    const { user, oldNickname } = await auth.updateProfile({ ...profileForm })
     wall.syncAuthorNickname(user.id, oldNickname, user.nickname)
     ElMessage.success('资料已更新')
   } catch (e) {
@@ -199,7 +198,7 @@ async function removeMine(c) {
     return
   }
   try {
-    wall.deleteOwnConfession(c.id)
+    await wall.deleteOwnConfession(c.id)
     ElMessage.success('已删除')
   } catch (e) {
     ElMessage.error(e.message)
@@ -214,7 +213,7 @@ async function savePassword() {
   }
   savingPwd.value = true
   try {
-    auth.changePassword({ oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
+    await auth.changePassword({ oldPassword: pwdForm.oldPassword, newPassword: pwdForm.newPassword })
     ElMessage.success('密码修改成功，请牢记新密码')
     pwdForm.oldPassword = ''
     pwdForm.newPassword = ''
@@ -232,7 +231,7 @@ async function savePassword() {
   position: relative;
   min-height: 100%;
   background: var(--hero-grad);
-  padding: 32px 20px 60px;
+  padding: 32px 16px 60px;
 }
 .profile-container {
   position: relative;
@@ -249,6 +248,7 @@ async function savePassword() {
   padding: 22px 24px;
   box-shadow: 0 10px 28px var(--card-shadow-hover);
   margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 .big-avatar {
   width: 64px;
@@ -377,8 +377,34 @@ async function savePassword() {
   margin-top: 6px;
   font-size: 12px;
   color: var(--text-4);
+  flex-wrap: wrap;
 }
 .my-item-ops {
   flex-shrink: 0;
+}
+@media (max-width: 768px) {
+  .profile-header {
+    padding: 16px;
+  }
+  .big-avatar {
+    width: 48px;
+    height: 48px;
+    font-size: 20px;
+  }
+  .header-info h2 {
+    font-size: 17px;
+  }
+}
+@media (max-width: 480px) {
+  .profile-page {
+    padding: 16px 10px 40px;
+  }
+  .my-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .my-item-ops {
+    align-self: flex-end;
+  }
 }
 </style>

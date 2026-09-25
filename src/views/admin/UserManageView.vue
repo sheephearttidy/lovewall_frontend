@@ -132,7 +132,7 @@ import { exportCsv } from '@/utils/csv'
 
 const auth = useAuthStore()
 const audit = useAuditStore()
-auth.init()
+auth.init().catch(() => {})
 
 const keyword = ref('')
 const page = ref(1)
@@ -172,7 +172,7 @@ async function toggleBan(row) {
     '提示',
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
-  auth.setBanned(row.id, next === 'banned')
+  await auth.setBanned(row.id, next === 'banned')
   audit.log(next === 'banned' ? 'user.ban' : 'user.unban', `${next === 'banned' ? '封禁' : '解封'}用户「${row.nickname}」(@${row.username})`)
   ElMessage.success(next === 'banned' ? '已封禁' : '已解封')
 }
@@ -184,7 +184,7 @@ async function toggleRole(row) {
     '提示',
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
-  auth.setRole(row.id, next)
+  await auth.setRole(row.id, next)
   audit.log('user.role', `将「${row.nickname}」${next === 'admin' ? '设为' : '取消'}管理员`)
   ElMessage.success('角色已更新')
 }
@@ -195,7 +195,7 @@ async function resetPwd(row) {
     '提示',
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
-  auth.resetPassword(row.id)
+  await auth.resetPassword(row.id)
   audit.log('user.resetPwd', `重置用户「${row.nickname}」的密码`)
   ElMessage.success('密码已重置为 123456')
 }
@@ -206,7 +206,7 @@ async function removeOne(row) {
     confirmButtonText: '删除',
     cancelButtonText: '取消'
   })
-  auth.deleteUser(row.id)
+  await auth.deleteUser(row.id)
   audit.log('user.delete', `删除用户「${row.nickname}」(@${row.username})`)
   ElMessage.success('删除成功')
 }
@@ -218,7 +218,7 @@ async function createUser() {
     return
   }
   try {
-    auth.createUser({ ...createForm })
+    await auth.createUser({ ...createForm })
     audit.log('user.create', `创建${createForm.role === 'admin' ? '管理员' : '用户'}「${createForm.username}」`)
     ElMessage.success('用户创建成功')
     createVisible.value = false
@@ -250,7 +250,7 @@ function exportRows() {
   flex-wrap: wrap;
 }
 .search-input {
-  width: 260px;
+  width: min(260px, 100%);
 }
 .spacer {
   flex: 1;
@@ -287,5 +287,11 @@ function exportRows() {
   display: flex;
   justify-content: flex-end;
   margin-top: 16px;
+  flex-wrap: wrap;
+}
+@media (max-width: 768px) {
+  .pagination {
+    justify-content: center;
+  }
 }
 </style>
