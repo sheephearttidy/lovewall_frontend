@@ -10,6 +10,10 @@
         class="search-input"
       />
       <div class="spacer"></div>
+      <el-button :disabled="!filtered.length" @click="exportRows">
+        <el-icon><Download /></el-icon>
+        <span>导出 CSV</span>
+      </el-button>
       <el-button type="primary" @click="createVisible = true">
         <el-icon><Plus /></el-icon>新增用户
       </el-button>
@@ -122,9 +126,12 @@ import { computed, reactive, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, Plus } from '@element-plus/icons-vue'
 import { useAuthStore } from '@/stores/auth'
+import { useAuditStore } from '@/stores/audit'
 import { formatDateTime } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 
 const auth = useAuthStore()
+const audit = useAuditStore()
 auth.init()
 
 const keyword = ref('')
@@ -166,6 +173,7 @@ async function toggleBan(row) {
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
   auth.setBanned(row.id, next === 'banned')
+  audit.log(next === 'banned' ? 'user.ban' : 'user.unban', `${next === 'banned' ? '封禁' : '解封'}用户「${row.nickname}」(@${row.username})`)
   ElMessage.success(next === 'banned' ? '已封禁' : '已解封')
 }
 
@@ -177,6 +185,7 @@ async function toggleRole(row) {
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
   auth.setRole(row.id, next)
+  audit.log('user.role', `将「${row.nickname}」${next === 'admin' ? '设为' : '取消'}管理员`)
   ElMessage.success('角色已更新')
 }
 
@@ -187,6 +196,7 @@ async function resetPwd(row) {
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
   auth.resetPassword(row.id)
+  audit.log('user.resetPwd', `重置用户「${row.nickname}」的密码`)
   ElMessage.success('密码已重置为 123456')
 }
 
@@ -197,6 +207,7 @@ async function removeOne(row) {
     cancelButtonText: '取消'
   })
   auth.deleteUser(row.id)
+  audit.log('user.delete', `删除用户「${row.nickname}」(@${row.username})`)
   ElMessage.success('删除成功')
 }
 
@@ -208,12 +219,25 @@ async function createUser() {
   }
   try {
     auth.createUser({ ...createForm })
+    audit.log('user.create', `创建${createForm.role === 'admin' ? '管理员' : '用户'}「${createForm.username}」`)
     ElMessage.success('用户创建成功')
     createVisible.value = false
     Object.assign(createForm, { username: '', nickname: '', email: '', password: '', role: 'user' })
   } catch (e) {
     ElMessage.error(e.message)
   }
+}
+
+function exportRows() {
+  exportCsv(
+    'lovewall-用户数据',
+    ['用户名', '昵称', '邮箱', '角色', '状态', '注册时间'],
+    filtered.value.map((u) => [
+      u.username, u.nickname, u.email || '-', u.role === 'admin' ? '管理员' : '普通用户',
+      u.status === 'active' ? '正常' : '已封禁', formatDateTime(u.createdAt)
+    ])
+  )
+  ElMessage.success(`已导出 ${filtered.value.length} 条数据`)
 }
 </script>
 

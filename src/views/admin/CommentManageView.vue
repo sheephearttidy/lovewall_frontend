@@ -10,6 +10,10 @@
         class="search-input"
       />
       <div class="spacer"></div>
+      <el-button :disabled="!filtered.length" @click="exportRows">
+        <el-icon><Download /></el-icon>
+        <span>导出 CSV</span>
+      </el-button>
       <el-button type="danger" plain :disabled="!selection.length" @click="batchDelete">
         批量删除{{ selection.length ? `（${selection.length}）` : '' }}
       </el-button>
@@ -59,9 +63,12 @@ import { computed, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useWallStore } from '@/stores/wall'
+import { useAuditStore } from '@/stores/audit'
 import { formatDateTime } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 
 const wall = useWallStore()
+const audit = useAuditStore()
 wall.init()
 
 const keyword = ref('')
@@ -89,6 +96,7 @@ async function removeOne(row) {
     cancelButtonText: '取消'
   })
   wall.removeComment(row.id)
+  audit.log('comment.delete', `删除评论「${row.content.slice(0, 20)}…」(${row.id})`)
   ElMessage.success('删除成功')
 }
 
@@ -99,8 +107,20 @@ async function batchDelete() {
     cancelButtonText: '取消'
   })
   wall.removeComments(selection.value.map((r) => r.id))
+  audit.log('comment.delete', `批量删除 ${selection.value.length} 条评论`)
   selection.value = []
   ElMessage.success('批量删除成功')
+}
+
+function exportRows() {
+  exportCsv(
+    'lovewall-评论数据',
+    ['评论ID', '内容', '所属表白', '评论人', '时间'],
+    filtered.value.map((cm) => [
+      cm.id, cm.content, `To：${cm.confessionTo}`, cm.nickname, formatDateTime(cm.createdAt)
+    ])
+  )
+  ElMessage.success(`已导出 ${filtered.value.length} 条数据`)
 }
 </script>
 

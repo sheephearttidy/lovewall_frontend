@@ -14,6 +14,10 @@
         <el-option label="已隐藏" value="hidden" />
       </el-select>
       <div class="spacer"></div>
+      <el-button :disabled="!filtered.length" @click="exportRows">
+        <el-icon><Download /></el-icon>
+        <span>导出 CSV</span>
+      </el-button>
       <el-button type="danger" plain :disabled="!selection.length" @click="batchDelete">
         批量删除{{ selection.length ? `（${selection.length}）` : '' }}
       </el-button>
@@ -144,9 +148,12 @@ import { computed, ref } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search } from '@element-plus/icons-vue'
 import { useWallStore } from '@/stores/wall'
+import { useAuditStore } from '@/stores/audit'
 import { formatDateTime, timeAgo } from '@/utils/format'
+import { exportCsv } from '@/utils/csv'
 
 const wall = useWallStore()
+const audit = useAuditStore()
 wall.init()
 
 const keyword = ref('')
@@ -188,6 +195,7 @@ function showDetail(row) {
 function togglePinned(row) {
   try {
     const pinned = wall.togglePinned(row.id)
+    audit.log(pinned ? 'confession.pin' : 'confession.unpin', `${pinned ? '置顶' : '取消置顶'}表白「${row.to}」(${row.id})`)
     ElMessage.success(pinned ? '已置顶，前台将优先展示' : '已取消置顶')
   } catch (e) {
     ElMessage.warning(e.message)
@@ -202,6 +210,7 @@ async function toggleStatus(row) {
     { type: 'warning', confirmButtonText: '确定', cancelButtonText: '取消' }
   )
   wall.setConfessionStatus(row.id, next)
+  audit.log(next === 'hidden' ? 'confession.hide' : 'confession.show', `${next === 'hidden' ? '隐藏' : '恢复'}表白「${row.to}」(${row.id})`)
   ElMessage.success(next === 'hidden' ? '已隐藏' : '已恢复')
 }
 
@@ -212,6 +221,7 @@ async function removeOne(row) {
     cancelButtonText: '取消'
   })
   wall.removeConfession(row.id)
+  audit.log('confession.delete', `删除表白「${row.to}」(${row.id})`)
   ElMessage.success('删除成功')
 }
 
@@ -222,8 +232,21 @@ async function batchDelete() {
     cancelButtonText: '取消'
   })
   wall.removeConfessions(selection.value.map((r) => r.id))
+  audit.log('confession.delete', `批量删除 ${selection.value.length} 条表白`)
   selection.value = []
   ElMessage.success('批量删除成功')
+}
+
+function exportRows() {
+  exportCsv(
+    'lovewall-表白数据',
+    ['ID', '收件人', '署名', '内容', '点赞数', '评论数', '状态', '置顶', '发布时间'],
+    filtered.value.map((c) => [
+      c.id, c.to, c.from, c.content, c.likes.length, c.comments.length,
+      c.status === 'normal' ? '正常' : '已隐藏', c.pinned ? '是' : '否', formatDateTime(c.createdAt)
+    ])
+  )
+  ElMessage.success(`已导出 ${filtered.value.length} 条数据`)
 }
 </script>
 

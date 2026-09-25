@@ -42,31 +42,37 @@ const routes = [
         path: 'dashboard',
         name: 'admin-dashboard',
         component: () => import('@/views/admin/DashboardView.vue'),
-        meta: { title: '仪表盘', requiresAdmin: true }
+        meta: { title: '仪表盘', desc: '站点运营数据总览与快捷入口', requiresAdmin: true }
       },
       {
         path: 'confessions',
         name: 'admin-confessions',
         component: () => import('@/views/admin/ConfessionManageView.vue'),
-        meta: { title: '表白管理', requiresAdmin: true }
+        meta: { title: '表白管理', desc: '审核、置顶、隐藏或删除站内表白内容', requiresAdmin: true }
       },
       {
         path: 'comments',
         name: 'admin-comments',
         component: () => import('@/views/admin/CommentManageView.vue'),
-        meta: { title: '评论管理', requiresAdmin: true }
+        meta: { title: '评论管理', desc: '巡查并处理违规评论与楼中楼回复', requiresAdmin: true }
       },
       {
         path: 'users',
         name: 'admin-users',
         component: () => import('@/views/admin/UserManageView.vue'),
-        meta: { title: '用户管理', requiresAdmin: true }
+        meta: { title: '用户管理', desc: '管理站内用户、角色与账号状态', requiresAdmin: true }
+      },
+      {
+        path: 'audit',
+        name: 'admin-audit',
+        component: () => import('@/views/admin/AuditLogView.vue'),
+        meta: { title: '操作日志', desc: '管理员全部敏感操作的审计记录', requiresAdmin: true }
       },
       {
         path: 'settings',
         name: 'admin-settings',
         component: () => import('@/views/admin/SettingsView.vue'),
-        meta: { title: '系统设置', requiresAdmin: true }
+        meta: { title: '系统设置', desc: '全局功能开关与站点安全策略', requiresAdmin: true }
       }
     ]
   },

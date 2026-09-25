@@ -92,9 +92,17 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuditStore } from '@/stores/audit'
 
 const settings = useSettingsStore()
+const audit = useAuditStore()
 settings.init()
+
+const SETTING_NAMES = {
+  email: '注册邮箱验证',
+  captcha: '注册图形验证码',
+  sensitive: '敏感词过滤'
+}
 
 const emailEnabled = ref(settings.emailVerificationEnabled)
 const captchaEnabled = ref(settings.captchaEnabled)
@@ -106,14 +114,13 @@ function onSwitch(type, val) {
   try {
     if (type === 'email') {
       settings.setEmailVerification(val)
-      ElMessage.success(val ? '已开启注册邮箱验证' : '已关闭注册邮箱验证')
     } else if (type === 'captcha') {
       settings.setCaptcha(val)
-      ElMessage.success(val ? '已开启注册图形验证码' : '已关闭注册图形验证码')
     } else {
       settings.setSensitiveFilter(val)
-      ElMessage.success(val ? '已开启敏感词过滤' : '已关闭敏感词过滤')
     }
+    audit.log('settings.update', `将「${SETTING_NAMES[type]}」设为${val ? '开启' : '关闭'}`)
+    ElMessage.success(`已${val ? '开启' : '关闭'}${SETTING_NAMES[type]}`)
   } finally {
     switching.value = false
   }
