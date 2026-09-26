@@ -16,3 +16,10 @@ yarn-error.log*
 *.sw?
 .trae-html-share-packages/
 .screenshots/
+
+# SSH 密钥，严禁提交
+lovewall_ssh_private_key
+lovewall_ssh_public_key.pub
+*_ssh_private_key
+*.pem
+*.key
